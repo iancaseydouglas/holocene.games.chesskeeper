@@ -1,12 +1,19 @@
 # Chess Keeper
 
-## Game Tracker and Clock
-
 * **Time Every Move:** Run Bullet, Blitz, Classical, or multi-day matches in digital, hourglass, or analog view.
 * **Play Effortlessly:** Start, pause, and switch turns with the spacebar—or automatically on every board move.
 * **Sync Anywhere:** Share one screen, float over your desktop, or link two devices in real time without a server. 
 * **Track Automatically:** Play on a live, tear-away board that enforces legal moves and writes clean notation for you.
 * **Save & Share:** Keep player stats, export Chess.com-ready PGNs, and snap PNG board shots in one click.
+
+### Quick Start
+
+1. **Open the App:** Double-click `index.html` in any modern browser—no installation, Node.js, or server required.
+2. **Pick Your Time Control:** Select a preset (Bullet, Blitz, Rapid, Classical, or Epic 1–2 Day) or choose **Custom** in the top bar.
+3. **Start & Switch Turns:** Press `Space` to start or pause the clock. To end a turn, either make a move on the floating chessboard (which logs notation automatically) or tap your clock pad / press `Enter`.
+4. **Customize Your View:** Switch between **Digital**, **Hourglass**, and **Analog** styles, toggle **Board Only**, **Slim Float**, **Fullscreen (`F`)**, or **Zen Mode (`Z`)**, and save your defaults in **Settings (`⚙`)**.
+5. **Link Two Devices (Optional):** Click **2-Device Link** to pair two phones or browsers via **Same Network (P2P)**, **Bluetooth (BLE)**, or zero-login **Epic Cloud Sync (`jsonblob.com`)**.
+6. **Save & Export:** Open **Notation** to enter player names, save completed games, and export **Chess.com-ready `.pgn**` files, `.json` backups, or **PNG** snapshots (`📷`).
 
 ## Features & Clock Styles
 
