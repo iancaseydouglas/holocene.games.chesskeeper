@@ -1,0 +1,4310 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pure Chess Clock — Digital, Hourglass &amp; Analog</title>
+  <style>
+    :root {
+      --bg: #0d1017;
+      --surface: #161b26;
+      --surface-2: #1e2534;
+      --border: #2a3347;
+      --text: #f3f5f9;
+      --text-muted: #93a0b8;
+      --accent: #3b82f6;
+      --accent-soft: rgba(59, 130, 246, 0.16);
+      --active-white-bg: #1e293b;
+      --active-white-border: #60a5fa;
+      --active-black-bg: #182230;
+      --active-black-border: #38bdf8;
+      --danger: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.18);
+      --warning: #f59e0b;
+      --sand: #e8b86d;
+      --sand-dark: #c99242;
+      --glass-stroke: #4b5875;
+      --glass-fill: rgba(255, 255, 255, 0.03);
+      --shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+      --radius: 20px;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sq-light: #eed9b7;
+      --sq-dark: #a87951;
+      --board-border: #593e28;
+      --piece-white: #fff7e6;
+      --piece-black: #282c36;
+    }
+
+    html[data-theme="light"] {
+      --bg: #f2efe9;
+      --surface: #ffffff;
+      --surface-2: #e7e2d8;
+      --border: #d5cec0;
+      --text: #161922;
+      --text-muted: #5c6475;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.12);
+      --active-white-bg: #ffffff;
+      --active-white-border: #2563eb;
+      --active-black-bg: #f7f4ed;
+      --active-black-border: #0284c7;
+      --danger: #dc2626;
+      --danger-soft: rgba(220, 38, 38, 0.12);
+      --warning: #d97706;
+      --sand: #d4943a;
+      --sand-dark: #b37422;
+      --glass-stroke: #8f96a6;
+      --glass-fill: rgba(0, 0, 0, 0.025);
+      --shadow: 0 16px 40px rgba(22, 25, 34, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      transition: background-color 0.25s ease, color 0.25s ease;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 14px 18px 18px;
+      gap: 14px;
+    }
+
+    /* Header / Toolbar */
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+    }
+
+    .toolbar-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .segmented {
+      display: inline-flex;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .seg-btn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 6px 11px;
+      border-radius: 7px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background-color 0.18s ease, color 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .seg-btn:hover {
+      color: var(--text);
+    }
+
+    .seg-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 7px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.1s ease, background-color 0.18s ease, border-color 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.08);
+    }
+
+    .btn-icon {
+      padding: 7px 9px;
+    }
+
+    select.select-input {
+      appearance: none;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 7px 28px 7px 11px;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+                        linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+      background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%;
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+    }
+
+    /* Main Clock Stage */
+    .stage {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .player-pad {
+      position: relative;
+      background: var(--surface);
+      border: 3px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: transform 0.12s ease, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+      min-height: 360px;
+      overflow: hidden;
+    }
+
+    .player-pad:hover {
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+    }
+
+    .player-pad:active {
+      transform: scale(0.992);
+    }
+
+    .player-pad.active[data-side="white"] {
+      background: var(--active-white-bg);
+      border-color: var(--active-white-border);
+      box-shadow: 0 0 0 4px var(--accent-soft), var(--shadow);
+    }
+
+    .player-pad.active[data-side="black"] {
+      background: var(--active-black-bg);
+      border-color: var(--active-black-border);
+      box-shadow: 0 0 0 4px var(--accent-soft), var(--shadow);
+    }
+
+    .player-pad.inactive-dim {
+      opacity: 0.72;
+    }
+
+    .player-pad.flagged {
+      border-color: var(--danger) !important;
+      background: var(--danger-soft) !important;
+      animation: flagPulse 1.1s ease-in-out infinite;
+    }
+
+    @keyframes flagPulse {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25); }
+      50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.45); }
+    }
+
+    .pad-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      z-index: 2;
+    }
+
+    .player-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .piece-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+    }
+
+    .piece-dot.white {
+      background: #ffffff;
+      border-color: #94a3b8;
+    }
+
+    .piece-dot.black {
+      background: #111827;
+      border-color: #475569;
+    }
+
+    .status-pill {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .player-pad.active .status-pill {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .player-pad.flagged .status-pill {
+      background: var(--danger);
+      color: #ffffff;
+    }
+
+    /* Clock Face Area */
+    .clock-center {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 2;
+    }
+
+    .digital-time {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      font-size: clamp(3.4rem, 9.5vw, 8.2rem);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      text-align: center;
+    }
+
+    .digital-time.low-time {
+      color: var(--warning);
+    }
+
+    .digital-time.critical-time {
+      color: var(--danger);
+    }
+
+    .clock-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Hourglass Visual */
+    .hourglass-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .hourglass-svg {
+      width: clamp(130px, 16vw, 210px);
+      height: clamp(170px, 22vw, 270px);
+      overflow: visible;
+    }
+
+    .sand-stream {
+      stroke: var(--sand);
+      stroke-width: 3;
+      stroke-dasharray: 5 5;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .player-pad.active .sand-stream.flowing {
+      opacity: 1;
+      animation: sandFall 0.45s linear infinite;
+    }
+
+    @keyframes sandFall {
+      from { stroke-dashoffset: 10; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* Analog Clock Visual */
+    .analog-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .analog-svg {
+      width: clamp(170px, 21vw, 270px);
+      height: clamp(170px, 21vw, 270px);
+    }
+
+    /* Style Switching */
+    .app-shell[data-clock-style="digital"] .digital-only { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .app-shell[data-clock-style="digital"] .hourglass-wrap,
+    .app-shell[data-clock-style="digital"] .analog-wrap { display: none; }
+
+    .app-shell[data-clock-style="hourglass"] .digital-only { display: none; }
+    .app-shell[data-clock-style="hourglass"] .hourglass-wrap { display: flex; }
+    .app-shell[data-clock-style="hourglass"] .digital-time-compact {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(1.7rem, 3.2vw, 2.7rem);
+      font-weight: 800;
+    }
+
+    .app-shell[data-clock-style="analog"] .digital-only { display: none; }
+    .app-shell[data-clock-style="analog"] .analog-wrap { display: flex; }
+    .app-shell[data-clock-style="analog"] .digital-time-compact {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(1.6rem, 3vw, 2.5rem);
+      font-weight: 800;
+    }
+
+    .pad-footer {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+      z-index: 2;
+    }
+
+    /* Bottom Control Bar */
+    .bottom-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 16px;
+    }
+
+    .control-cluster {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hint-text {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    kbd {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    /* Slim Floating Desktop Mode */
+    .slim-dock {
+      display: none;
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 10px 14px;
+      min-width: 340px;
+      max-width: calc(100vw - 24px);
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .app-shell.slim-mode .topbar,
+    .app-shell.slim-mode .stage,
+    .app-shell.slim-mode .bottom-bar {
+      display: none;
+    }
+
+    .app-shell.slim-mode ~ .slim-dock,
+    body.is-slim .slim-dock {
+      display: flex;
+    }
+
+    body.is-slim .slim-backdrop-note {
+      display: flex;
+    }
+
+    .slim-backdrop-note {
+      display: none;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .slim-drag-handle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: grab;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .slim-drag-handle:active {
+      cursor: grabbing;
+    }
+
+    .slim-row {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .slim-side {
+      flex: 1;
+      border: 2px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .slim-side.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .slim-side.flagged {
+      border-color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .slim-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .slim-time {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .slim-mini-hg {
+      width: 24px;
+      height: 30px;
+      display: none;
+    }
+
+    body.slim-hourglass .slim-mini-hg {
+      display: block;
+    }
+
+    .slim-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      justify-content: center;
+    }
+
+    /* Custom Time Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .field input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    /* 2-Device Link Mode */
+    .btn.connected {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.14);
+      color: #10b981;
+    }
+
+    .link-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: var(--surface);
+      border: 1.5px solid var(--accent);
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .app-shell.link-mode .link-banner {
+      display: flex;
+    }
+
+    .app-shell.link-mode.single-focus .stage {
+      grid-template-columns: 1fr;
+    }
+
+    .app-shell.link-mode.single-focus .player-pad.hidden-opponent {
+      display: none;
+    }
+
+    .link-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      display: inline-block;
+    }
+
+    .link-dot.online {
+      background: #10b981;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.22);
+    }
+
+    .modal-card.wide {
+      max-width: 500px;
+    }
+
+    .tab-row {
+      display: flex;
+      gap: 4px;
+      background: var(--surface-2);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      flex: 1;
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 8px;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+    }
+
+    .tab-panel {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tab-panel.active {
+      display: flex;
+    }
+
+    .code-box {
+      width: 100%;
+      min-height: 68px;
+      padding: 8px 10px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      resize: vertical;
+    }
+
+    .helper-note {
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text-muted);
+    }
+
+    .status-box {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 10px;
+      border-radius: 9px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    /* Notation & Scorecard Mode */
+    .btn.notation-active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .notation-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .app-shell.notation-mode .notation-panel {
+      display: flex;
+    }
+
+    .notation-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .player-name-inputs {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .inline-input {
+      padding: 7px 10px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      width: 155px;
+    }
+
+    .move-entry-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .move-input {
+      padding: 8px 12px;
+      border-radius: 9px;
+      border: 1.5px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      width: 190px;
+    }
+
+    .move-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .moves-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+      gap: 6px;
+      max-height: 140px;
+      overflow-y: auto;
+      padding: 8px;
+      border-radius: 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+    }
+
+    .move-pair {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 6px;
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .move-num {
+      color: var(--text-muted);
+      font-weight: 700;
+      min-width: 24px;
+    }
+
+    .saved-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .saved-item {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      font-size: 12.5px;
+    }
+
+    /* Floating Chessboard Flyout (Resizable + Uniform 1:1 Squares + CSS 3D) */
+    .btn.board-active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .board-flyout {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 68px;
+      z-index: 950;
+      width: 288px;
+      min-width: 236px;
+      max-width: 92vw;
+      min-height: 290px;
+      resize: both;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .board-flyout.hidden {
+      display: none;
+    }
+
+    .board-flyout-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      cursor: grab;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .board-flyout-head:active {
+      cursor: grabbing;
+    }
+
+    .board-stage-wrap {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      perspective: 820px;
+      padding: 4px;
+    }
+
+    .chess-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      width: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      aspect-ratio: 1 / 1;
+      border: 3px solid #4a3525;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .board-flyout[data-piece-style="flat-book"] .chess-grid {
+      border-color: #2c313c;
+    }
+
+    .board-flyout[data-piece-style="staunton-3d"] .chess-grid {
+      transform: rotateX(16deg);
+      transform-style: preserve-3d;
+      border: 4px solid #593e28;
+      box-shadow: 0 10px 0 #3d2817, 0 18px 28px rgba(0, 0, 0, 0.52);
+    }
+
+    .sq {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      min-height: 0;
+      width: 100%;
+      height: 100%;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .sq.light { background: var(--sq-light); }
+    .sq.dark { background: var(--sq-dark); }
+    .chess-grid { border-color: var(--board-border); }
+    .board-flyout[data-piece-style="staunton-3d"] .sq.light {
+      background: linear-gradient(135deg, color-mix(in srgb, var(--sq-light) 92%, #fff) 0%, var(--sq-light) 100%);
+    }
+    .board-flyout[data-piece-style="staunton-3d"] .sq.dark {
+      background: linear-gradient(135deg, color-mix(in srgb, var(--sq-dark) 88%, #fff) 0%, var(--sq-dark) 100%);
+    }
+    .board-flyout[data-piece-style="flat-book"] .sq.light { background: #f8f7f3; }
+    .board-flyout[data-piece-style="flat-book"] .sq.dark { background: #cbd0d8; }
+    .board-flyout[data-piece-style="tournament-mat"] .sq.light { background: var(--sq-light, #eeeed2); }
+    .board-flyout[data-piece-style="tournament-mat"] .sq.dark { background: var(--sq-dark, #769656); }
+    .board-flyout[data-piece-style="tournament-mat"] .chess-grid {
+      border: 6px solid #2b4426;
+      border-radius: 4px;
+      box-shadow: none;
+    }
+
+    body.no-shadows .board-flyout,
+    body.no-shadows .topbar,
+    body.no-shadows .player-pad,
+    body.no-shadows .chess-grid,
+    body.no-shadows .piece-svg,
+    body.no-shadows .slim-dock {
+      box-shadow: none !important;
+      filter: none !important;
+    }
+
+    .sq.selected {
+      box-shadow: inset 0 0 0 3px #3b82f6;
+      background: #93c5fd !important;
+    }
+
+    .sq.last-move {
+      box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.9);
+    }
+
+    .sq.legal::after {
+      content: "";
+      position: absolute;
+      width: 28%;
+      height: 28%;
+      border-radius: 50%;
+      background: rgba(37, 99, 235, 0.62);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .sq.legal.has-piece::after {
+      width: 82%;
+      height: 82%;
+      background: transparent;
+      border: 3px solid rgba(220, 38, 38, 0.72);
+    }
+
+    .sq-coord {
+      position: absolute;
+      font-size: 8px;
+      font-weight: 700;
+      opacity: 0.7;
+      pointer-events: none;
+      color: #2b2118;
+      z-index: 2;
+      line-height: 1;
+    }
+    .sq-coord.file { right: 2px; bottom: 2px; }
+    .sq-coord.rank { left: 2px; top: 2px; }
+
+    .piece-svg {
+      width: 86%;
+      height: 86%;
+      pointer-events: none;
+      display: block;
+      z-index: 2;
+    }
+
+    .board-flyout[data-piece-style="staunton-3d"] .piece-svg {
+      transform: rotateX(-16deg) translateY(-2px);
+      filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.55));
+    }
+
+    .board-flyout-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    /* Symbols-Only Button View */
+    body.symbols-only .btn-label {
+      display: none;
+    }
+
+    body.symbols-only .btn,
+    body.symbols-only .seg-btn {
+      padding: 7px 9px;
+      gap: 0;
+    }
+
+    .btn-sym {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    /* Board-Only Mode (Timed or Untimed) */
+    .board-only-bar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 14px;
+    }
+
+    body.board-only-mode .board-only-bar {
+      display: flex;
+    }
+
+    body.board-only-mode .stage {
+      display: none;
+    }
+
+    body.board-only-mode .board-flyout {
+      position: static;
+      transform: none !important;
+      left: auto !important;
+      top: auto !important;
+      bottom: auto !important;
+      width: min(70vh, 520px);
+      max-width: 100%;
+      margin: 0 auto;
+      display: flex !important;
+    }
+
+    body.board-only-mode .board-flyout-head {
+      cursor: default;
+    }
+
+    .bo-clocks {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .bo-clocks.hidden {
+      display: none;
+    }
+
+    .bo-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 10px;
+      background: var(--surface-2);
+      border: 2px solid var(--border);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .bo-pill.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .bo-pill.flagged {
+      border-color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    /* Zen Mode */
+    body.zen-mode .topbar,
+    body.zen-mode .bottom-bar,
+    body.zen-mode .link-banner,
+    body.zen-mode .board-only-bar,
+    body.zen-mode .notation-panel,
+    body.zen-mode .pad-header,
+    body.zen-mode .pad-footer,
+    body.zen-mode .clock-sub {
+      display: none !important;
+    }
+
+    body.zen-mode .app-shell {
+      padding: 12px;
+    }
+
+    .exit-zen-pill {
+      display: none;
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 1500;
+      opacity: 0.35;
+      transition: opacity 0.2s ease;
+    }
+
+    .exit-zen-pill:hover {
+      opacity: 1;
+    }
+
+    body.zen-mode .exit-zen-pill {
+      display: inline-flex;
+    }
+
+    /* Square Player Avatar + Lightbox */
+    .avatar-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: var(--surface-2);
+      overflow: hidden;
+      display: inline-grid;
+      place-items: center;
+      cursor: pointer;
+      padding: 0;
+      flex-shrink: 0;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .avatar-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Rich Slide-Out Settings Drawer */
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      justify-content: flex-end;
+      z-index: 1300;
+    }
+
+    .drawer-backdrop.open {
+      display: flex;
+    }
+
+    .settings-drawer {
+      width: 100%;
+      max-width: 390px;
+      height: 100%;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .toggle-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .help-section {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+
+    .help-section h4 {
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    /* Almost-Invisible Subtle Branding */
+    .pad-watermark {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      opacity: 0.028;
+      z-index: 1;
+    }
+
+    .micro-brand {
+      position: fixed;
+      bottom: 6px;
+      right: 14px;
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text);
+      opacity: 0.14;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    body.zen-mode .micro-brand {
+      opacity: 0.06;
+    }
+
+    @media (max-width: 780px) {
+      .stage {
+        grid-template-columns: 1fr;
+      }
+      .player-pad {
+        min-height: 220px;
+        padding: 18px;
+      }
+      .digital-time {
+        font-size: clamp(3rem, 15vw, 5.2rem);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="appShell" data-clock-style="digital">
+    <!-- Top Toolbar -->
+    <header class="topbar">
+      <div class="brand">
+        <!-- HOLOCENE GAMES LOGO PLACEHOLDER: Replace the SVG below with your custom logo -->
+        <div class="brand-icon" id="holoceneLogoSlot" title="Holocene Games (Logo Placeholder)" aria-hidden="true">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-dasharray="2.5 2">
+            <circle cx="12" cy="12" r="9"></circle>
+            <text x="12" y="15" text-anchor="middle" font-size="8" font-weight="700" stroke="none" fill="currentColor" font-family="system-ui, sans-serif">HG</text>
+          </svg>
+        </div>
+        <span>Pure Chess Clock</span>
+      </div>
+
+      <div class="toolbar-group">
+        <!-- Clock Style Switcher -->
+        <div class="segmented" role="group" aria-label="Clock style">
+          <button class="seg-btn active" data-style="digital" type="button" title="Digital Clock"><span class="btn-sym"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M8 10v4M12 10v4M16 10v4"></path></svg></span><span class="btn-label">Digital</span></button>
+          <button class="seg-btn" data-style="hourglass" type="button" title="Hourglass Clock"><span class="btn-sym"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 2h14M5 22h14M7 2v4l5 6-5 6v4M17 2v4l-5 6 5 6v4"></path></svg></span><span class="btn-label">Hourglass</span></button>
+          <button class="seg-btn" data-style="analog" type="button" title="Analog Clock"><span class="btn-sym"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span><span class="btn-label">Analog</span></button>
+        </div>
+
+        <!-- Preset Selector -->
+        <select class="select-input" id="presetSelect" aria-label="Time control">
+          <option value="60,0">Bullet 1+0</option>
+          <option value="120,1">Bullet 2+1</option>
+          <option value="180,0">Blitz 3+0</option>
+          <option value="180,2" selected>Blitz 3+2</option>
+          <option value="300,0">Blitz 5+0</option>
+          <option value="300,3">Blitz 5+3</option>
+          <option value="600,0">Rapid 10+0</option>
+          <option value="900,10">Rapid 15+10</option>
+          <option value="1800,0">Classical 30+0</option>
+          <option value="86400,0">Epic 1 Day (24h)</option>
+          <option value="172800,0">Epic 2 Days (48h)</option>
+          <option value="custom">Custom…</option>
+        </select>
+      </div>
+
+      <div class="toolbar-group">
+        <button class="btn" id="boardOnlyBtn" type="button" title="Board Only Mode (Timed or Untimed)">
+          <span class="btn-sym"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M12 4v16M4 12h16"></path></svg></span>
+          <span class="btn-label">Board Only</span>
+        </button>
+        <button class="btn board-active" id="boardFlyoutBtn" type="button" title="Toggle Floating Chessboard Flyout">
+          <span class="btn-sym"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18M3 15h18M9 3v18M15 3v18"></path></svg></span>
+          <span class="btn-label">Board</span>
+        </button>
+        <button class="btn" id="notationModeBtn" type="button" title="Toggle Player Names, Chess Notation &amp; Game Records">
+          <span class="btn-sym"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>
+          <span class="btn-label">Notation</span>
+        </button>
+        <button class="btn" id="linkModeBtn" type="button" title="Connect two devices via Network (WebRTC) or Bluetooth">
+          <span class="btn-sym"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11"></path></svg></span>
+          <span class="btn-label">2-Device Link</span>
+        </button>
+        <button class="btn" id="slimModeBtn" type="button" title="Switch to Slim Floating Desktop Bar">
+          <span class="btn-sym"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="7" width="18" height="10" rx="2"></rect></svg></span>
+          <span class="btn-label">Slim Float</span>
+        </button>
+        <button class="btn" id="fullscreenBtn" type="button" title="Toggle Fullscreen (F)">
+          <span class="btn-sym"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg></span>
+          <span class="btn-label">Fullscreen</span>
+        </button>
+        <button class="btn btn-icon" id="exportPngBtn" type="button" title="Export PNG Snapshot of Current Screen" aria-label="Export PNG Snapshot">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="12" cy="12" r="3.5"></circle></svg>
+        </button>
+        <button class="btn btn-icon" id="symbolsModeBtn" type="button" title="Toggle Symbols-Only Buttons" aria-label="Toggle Symbols-Only Buttons">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+        </button>
+        <button class="btn btn-icon" id="zenModeBtn" type="button" title="Zen Mode (Z) — Hide all UI except clock or board" aria-label="Zen Mode">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+        </button>
+        <button class="btn btn-icon" id="helpBtn" type="button" title="Help &amp; P2P Connection Guide" aria-label="Help">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        </button>
+        <button class="btn btn-icon" id="settingsBtn" type="button" title="Settings &amp; Defaults" aria-label="Settings and Defaults">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+        <button class="btn btn-icon" id="themeBtn" type="button" aria-label="Toggle Light/Dark Mode" title="Toggle Dark / Light Mode (T)">
+          <span id="themeIcon"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 2-Device Link Status Banner -->
+    <div class="link-banner" id="linkBanner">
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span class="link-dot" id="linkDot"></span>
+        <span id="linkBannerText">2-Device Link Mode: Not connected</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <div class="segmented" role="group" aria-label="My side">
+          <button class="seg-btn active" id="mySideWhiteBtn" type="button">My Side: White</button>
+          <button class="seg-btn" id="mySideBlackBtn" type="button">My Side: Black</button>
+        </div>
+        <button class="btn" id="focusToggleBtn" type="button">View: My Side Only</button>
+        <button class="btn" id="openLinkModalBtn" type="button">Connection Setup</button>
+        <button class="btn" id="exitLinkModeBtn" type="button">Exit Link Mode</button>
+      </div>
+    </div>
+
+    <!-- Board-Only Mode Bar -->
+    <div class="board-only-bar" id="boardOnlyBar">
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-primary" id="boClockToggleBtn" type="button" title="Toggle Clock On / Off in Board-Only Mode">
+          <span class="btn-sym"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path></svg></span>
+          <span class="btn-label" id="boClockToggleLabel">Clock: On</span>
+        </button>
+        <button class="btn" id="exitBoardOnlyBtn" type="button" title="Return to Full Clock View">
+          <span class="btn-sym"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"></path></svg></span>
+          <span class="btn-label">Exit Board Only</span>
+        </button>
+      </div>
+      <div class="bo-clocks" id="boClocks">
+        <div class="bo-pill" id="boPillA"><span class="piece-dot white" style="width:11px;height:11px;"></span><span id="boTimeA">03:00</span></div>
+        <div class="bo-pill" id="boPillB"><span class="piece-dot black" style="width:11px;height:11px;"></span><span id="boTimeB">03:00</span></div>
+      </div>
+    </div>
+
+    <!-- Main Dual Clock Stage -->
+    <main class="stage" id="stage">
+      <!-- Left Pad -->
+      <section class="player-pad" id="padA" data-side="white" role="button" tabindex="0" aria-label="White clock">
+        <div class="pad-watermark" aria-hidden="true"><svg width="160" height="160" viewBox="0 0 45 45" fill="currentColor"><path d="M14.5 35 L16.5 26 C14 23.5 12.5 20.5 14 16 L18 10.5 L20.5 7.5 L23.5 11.5 C29.5 12.5 33 17.5 33 24.5 C33 29 31 32.5 31.5 35 Z"/><rect x="11.5" y="35" width="22" height="4.5" rx="2"/></svg></div>
+        <div class="pad-header">
+          <div class="player-badge">
+            <button class="avatar-btn" id="avatarBtnA" type="button" title="View Player Profile &amp; Photo" onclick="event.stopPropagation()">W</button>
+            <span class="piece-dot white"></span>
+            <span id="labelA">White</span>
+          </div>
+          <span class="status-pill" id="statusA">Ready</span>
+        </div>
+
+        <div class="clock-center">
+          <div class="digital-only">
+            <div class="digital-time" id="timeA">03:00</div>
+            <div class="clock-sub" id="subA">Tap pad or press Enter to end turn</div>
+          </div>
+
+          <!-- Hourglass View -->
+          <div class="hourglass-wrap">
+            <svg class="hourglass-svg" viewBox="0 0 140 190" aria-hidden="true">
+              <defs>
+                <clipPath id="topBulbClipA">
+                  <path d="M32 22 H108 C108 58 76 80 72 92 H68 C64 80 32 58 32 22 Z" />
+                </clipPath>
+                <clipPath id="botBulbClipA">
+                  <path d="M68 98 H72 C76 110 108 132 108 168 H32 C32 132 64 110 68 98 Z" />
+                </clipPath>
+              </defs>
+              <!-- Frame -->
+              <rect x="20" y="12" width="100" height="8" rx="4" fill="var(--glass-stroke)" />
+              <rect x="20" y="170" width="100" height="8" rx="4" fill="var(--glass-stroke)" />
+              <!-- Glass Outline -->
+              <path d="M30 20 H110 C110 60 76 82 72 95 C76 108 110 130 110 170 H30 C30 130 64 108 68 95 C64 82 30 60 30 20 Z"
+                    fill="var(--glass-fill)" stroke="var(--glass-stroke)" stroke-width="3.5" stroke-linejoin="round" />
+              <!-- Top Sand -->
+              <rect id="hgTopA" x="28" y="22" width="84" height="70" fill="var(--sand)" clip-path="url(#topBulbClipA)" />
+              <!-- Bottom Sand -->
+              <rect id="hgBotA" x="28" y="168" width="84" height="0" fill="var(--sand-dark)" clip-path="url(#botBulbClipA)" />
+              <!-- Falling Stream -->
+              <line id="hgStreamA" class="sand-stream" x1="70" y1="95" x2="70" y2="168" />
+            </svg>
+            <div class="digital-time-compact" id="hgTimeA">03:00</div>
+          </div>
+
+          <!-- Analog View -->
+          <div class="analog-wrap">
+            <svg class="analog-svg" viewBox="0 0 200 200" aria-hidden="true">
+              <circle cx="100" cy="100" r="88" fill="var(--surface-2)" stroke="var(--glass-stroke)" stroke-width="5" />
+              <g id="ticksA"></g>
+              <!-- Red Flag near 12 -->
+              <path id="flagA" d="M100 18 L112 36 L98 38 Z" fill="var(--danger)" opacity="0.25" />
+              <!-- Minute Hand -->
+              <line id="minHandA" x1="100" y1="100" x2="100" y2="42" stroke="var(--text)" stroke-width="5.5" stroke-linecap="round" />
+              <!-- Second Hand -->
+              <line id="secHandA" x1="100" y1="112" x2="100" y2="26" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" />
+              <circle cx="100" cy="100" r="6" fill="var(--text)" />
+            </svg>
+            <div class="digital-time-compact" id="anTimeA">03:00</div>
+          </div>
+        </div>
+
+        <div class="pad-footer">
+          <span id="movesA">Moves: 0</span>
+          <span id="incA">+2s inc</span>
+        </div>
+      </section>
+
+      <!-- Right Pad -->
+      <section class="player-pad" id="padB" data-side="black" role="button" tabindex="0" aria-label="Black clock">
+        <div class="pad-watermark" aria-hidden="true"><svg width="160" height="160" viewBox="0 0 45 45" fill="currentColor"><path d="M14.5 35 L16.5 26 C14 23.5 12.5 20.5 14 16 L18 10.5 L20.5 7.5 L23.5 11.5 C29.5 12.5 33 17.5 33 24.5 C33 29 31 32.5 31.5 35 Z"/><rect x="11.5" y="35" width="22" height="4.5" rx="2"/></svg></div>
+        <div class="pad-header">
+          <div class="player-badge">
+            <button class="avatar-btn" id="avatarBtnB" type="button" title="View Player Profile &amp; Photo" onclick="event.stopPropagation()">B</button>
+            <span class="piece-dot black"></span>
+            <span id="labelB">Black</span>
+          </div>
+          <span class="status-pill" id="statusB">Ready</span>
+        </div>
+
+        <div class="clock-center">
+          <div class="digital-only">
+            <div class="digital-time" id="timeB">03:00</div>
+            <div class="clock-sub" id="subB">Tap pad or press Enter to end turn</div>
+          </div>
+
+          <!-- Hourglass View -->
+          <div class="hourglass-wrap">
+            <svg class="hourglass-svg" viewBox="0 0 140 190" aria-hidden="true">
+              <defs>
+                <clipPath id="topBulbClipB">
+                  <path d="M32 22 H108 C108 58 76 80 72 92 H68 C64 80 32 58 32 22 Z" />
+                </clipPath>
+                <clipPath id="botBulbClipB">
+                  <path d="M68 98 H72 C76 110 108 132 108 168 H32 C32 132 64 110 68 98 Z" />
+                </clipPath>
+              </defs>
+              <rect x="20" y="12" width="100" height="8" rx="4" fill="var(--glass-stroke)" />
+              <rect x="20" y="170" width="100" height="8" rx="4" fill="var(--glass-stroke)" />
+              <path d="M30 20 H110 C110 60 76 82 72 95 C76 108 110 130 110 170 H30 C30 130 64 108 68 95 C64 82 30 60 30 20 Z"
+                    fill="var(--glass-fill)" stroke="var(--glass-stroke)" stroke-width="3.5" stroke-linejoin="round" />
+              <rect id="hgTopB" x="28" y="22" width="84" height="70" fill="var(--sand)" clip-path="url(#topBulbClipB)" />
+              <rect id="hgBotB" x="28" y="168" width="84" height="0" fill="var(--sand-dark)" clip-path="url(#botBulbClipB)" />
+              <line id="hgStreamB" class="sand-stream" x1="70" y1="95" x2="70" y2="168" />
+            </svg>
+            <div class="digital-time-compact" id="hgTimeB">03:00</div>
+          </div>
+
+          <!-- Analog View -->
+          <div class="analog-wrap">
+            <svg class="analog-svg" viewBox="0 0 200 200" aria-hidden="true">
+              <circle cx="100" cy="100" r="88" fill="var(--surface-2)" stroke="var(--glass-stroke)" stroke-width="5" />
+              <g id="ticksB"></g>
+              <path id="flagB" d="M100 18 L112 36 L98 38 Z" fill="var(--danger)" opacity="0.25" />
+              <line id="minHandB" x1="100" y1="100" x2="100" y2="42" stroke="var(--text)" stroke-width="5.5" stroke-linecap="round" />
+              <line id="secHandB" x1="100" y1="112" x2="100" y2="26" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" />
+              <circle cx="100" cy="100" r="6" fill="var(--text)" />
+            </svg>
+            <div class="digital-time-compact" id="anTimeB">03:00</div>
+          </div>
+        </div>
+
+        <div class="pad-footer">
+          <span id="movesB">Moves: 0</span>
+          <span id="incB">+2s inc</span>
+        </div>
+      </section>
+    </main>
+
+    <!-- Optional Notation & Scorecard Mode Panel -->
+    <section class="notation-panel" id="notationPanel" aria-label="Chess Notation and Game Records">
+      <div class="notation-top">
+        <div class="player-name-inputs">
+          <label style="font-size:12px; font-weight:700; color:var(--text-muted);">
+            White:
+            <input type="text" class="inline-input" id="whiteNameInput" placeholder="White Player" maxlength="28" />
+          </label>
+          <label style="font-size:12px; font-weight:700; color:var(--text-muted);">
+            Black:
+            <input type="text" class="inline-input" id="blackNameInput" placeholder="Black Player" maxlength="28" />
+          </label>
+          <button class="btn" id="editProfilesBtn" type="button" style="font-size:12px; padding:6px 10px;">Player Profiles &amp; Photos</button>
+        </div>
+
+        <div class="move-entry-row">
+          <input type="text" class="move-input" id="moveNotationInput" placeholder="Move (e.g. e4, Nf3, O-O)" autocomplete="off" />
+          <button class="btn btn-primary" id="recordMoveBtn" type="button">Record &amp; End Turn</button>
+          <button class="btn" id="undoMoveBtn" type="button" title="Remove last recorded move">Undo Move</button>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <select class="select-input" id="resultSelect" aria-label="Game result">
+            <option value="*">Result: *</option>
+            <option value="1-0">1-0 (White wins)</option>
+            <option value="0-1">0-1 (Black wins)</option>
+            <option value="1/2-1/2">½-½ (Draw)</option>
+          </select>
+          <button class="btn btn-primary" id="saveGameBtn" type="button">Save Game</button>
+          <button class="btn" id="viewSavedGamesBtn" type="button">Saved Games (<span id="savedCount">0</span>)</button>
+        </div>
+      </div>
+
+      <div class="moves-grid" id="movesGrid">
+        <span style="color:var(--text-muted); grid-column:1/-1;">No moves recorded yet. Enter a move in algebraic notation (e.g. e4) and press Enter or Record &amp; End Turn.</span>
+      </div>
+    </section>
+
+    <!-- Bottom Controls -->
+    <footer class="bottom-bar">
+      <div class="control-cluster">
+        <button class="btn btn-primary" id="playPauseBtn" type="button" title="Start / Pause (Space)"><span class="btn-sym"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"></polygon></svg></span><span class="btn-label" id="playPauseLabel">Start</span></button>
+        <button class="btn" id="switchTurnBtn" type="button" title="Switch Turn (Enter)"><span class="btn-sym"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></span><span class="btn-label">Switch Turn</span></button>
+        <button class="btn" id="resetBtn" type="button" title="Reset Clock &amp; Board (R)"><span class="btn-sym"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg></span><span class="btn-label">Reset</span></button>
+        <button class="btn" id="swapSidesBtn" type="button" title="Swap White / Black Sides"><span class="btn-sym"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4"></path></svg></span><span class="btn-label">Swap Sides</span></button>
+        <button class="btn" id="soundBtn" type="button" title="Toggle Sound"><span class="btn-sym"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span><span class="btn-label" id="soundLabel">Sound: On</span></button>
+        <button class="btn" id="spaceModeBtn" type="button" title="Choose what Spacebar does"><span class="btn-sym"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="13" width="20" height="6" rx="2"></rect><path d="M6 16h12"></path></svg></span><span class="btn-label" id="spaceModeLabel">Space: On/Off</span></button>
+      </div>
+      <div class="hint-text">
+        <span><kbd>Space</kbd> <span id="spaceHintLabel">Turn clock On / Off</span></span>
+        <span><kbd>Enter</kbd> Switch Turn</span>
+        <span><kbd>R</kbd> Reset</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Slim Floating Desktop Mode -->
+  <div class="slim-backdrop-note" id="slimBackdropNote">
+    <div>
+      <p style="font-weight:700; color:var(--text); margin-bottom:6px;">Slim Floating Mode Active</p>
+      <p>Drag the floating bar anywhere on screen, or press <kbd>Space</kbd> to turn the clock on/off.</p>
+    </div>
+  </div>
+
+  <aside class="slim-dock" id="slimDock" aria-label="Slim Floating Chess Clock">
+    <div class="slim-drag-handle" id="slimDragHandle">
+      <span>⋮⋮ Chess Clock (Slim Float)</span>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <button class="btn" id="slimThemeBtn" type="button" style="padding:3px 8px; font-size:11px;">Theme</button>
+        <button class="btn" id="expandFromSlimBtn" type="button" style="padding:3px 8px; font-size:11px;">Expand</button>
+      </div>
+    </div>
+    <div class="slim-row">
+      <button class="slim-side" id="slimSideA" type="button">
+        <span class="slim-label"><span class="piece-dot white" style="width:10px;height:10px;"></span> <span id="slimLabelA">White</span></span>
+        <span class="slim-time" id="slimTimeA">03:00</span>
+      </button>
+
+      <div class="slim-actions">
+        <button class="btn btn-primary" id="slimPlayBtn" type="button" style="padding:6px 10px; font-size:12px;">Start</button>
+        <button class="btn" id="slimResetBtn" type="button" style="padding:5px 10px; font-size:11px;">Reset</button>
+      </div>
+
+      <button class="slim-side" id="slimSideB" type="button">
+        <span class="slim-label"><span class="piece-dot black" style="width:10px;height:10px;"></span> <span id="slimLabelB">Black</span></span>
+        <span class="slim-time" id="slimTimeB">03:00</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Optional Floating Chessboard Flyout (Defaults On) -->
+  <aside class="board-flyout" id="boardFlyout" data-piece-style="staunton-3d" aria-label="Floating Chessboard">
+    <div class="board-flyout-head" id="boardDragHandle">
+      <span>⋮⋮ Board</span>
+      <div style="display:flex; align-items:center; gap:4px;">
+        <select class="select-input" id="pieceStyleSelect" aria-label="Piece style" style="padding:3px 22px 3px 7px; font-size:11px;">
+          <option value="staunton-3d" selected>Staunton 3D</option>
+          <option value="staunton-classic">Staunton Classic</option>
+          <option value="flat-book">Flat Chess Book</option>
+          <option value="tournament-mat">Roll-Out Mat (Silicone)</option>
+        </select>
+        <button class="btn" id="flipBoardBtn" type="button" style="padding:3px 7px; font-size:11px;" title="Flip Board">Flip</button>
+        <button class="btn" id="tearBoardBtn" type="button" style="padding:3px 7px; font-size:11px;" title="Tear Away into Separate Window">↗</button>
+        <button class="btn" id="closeBoardFlyoutBtn" type="button" style="padding:3px 7px; font-size:11px;" title="Hide Board">×</button>
+      </div>
+    </div>
+    <div class="board-stage-wrap">
+      <div class="chess-grid" id="chessGrid"></div>
+    </div>
+    <div class="board-flyout-foot">
+      <span id="boardStatusText">White to move · Make move on board</span>
+      <button class="btn" id="boardUndoBtn" type="button" style="padding:2px 8px; font-size:11px;">Undo</button>
+    </div>
+  </aside>
+
+  <!-- Exit Zen Mode Floating Pill -->
+  <button class="btn exit-zen-pill" id="exitZenBtn" type="button">Exit Zen (Z)</button>
+
+  <!-- Rich Slide-Out Settings & Defaults Drawer -->
+  <div class="drawer-backdrop" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+    <div class="settings-drawer">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:8px; border-bottom:1px solid var(--border);">
+        <div class="modal-title" id="settingsModalTitle">Settings &amp; Defaults</div>
+        <button class="btn" id="closeSettingsBtn" type="button" style="padding:4px 10px;">Done</button>
+      </div>
+
+      <p class="helper-note">Changes apply immediately and are saved as your defaults going forward.</p>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="defTheme">Theme</label>
+          <select class="select-input" id="defTheme">
+            <option value="dark">Dark Mode</option>
+            <option value="light">Light Mode</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="defClockStyle">Clock Style</label>
+          <select class="select-input" id="defClockStyle">
+            <option value="digital">Digital</option>
+            <option value="hourglass">Hourglass</option>
+            <option value="analog">Analog</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="defPreset">Time Control</label>
+          <select class="select-input" id="defPreset">
+            <option value="60,0">Bullet 1+0</option>
+            <option value="120,1">Bullet 2+1</option>
+            <option value="180,0">Blitz 3+0</option>
+            <option value="180,2">Blitz 3+2</option>
+            <option value="300,0">Blitz 5+0</option>
+            <option value="300,3">Blitz 5+3</option>
+            <option value="600,0">Rapid 10+0</option>
+            <option value="900,10">Rapid 15+10</option>
+            <option value="1800,0">Classical 30+0</option>
+            <option value="86400,0">Epic 1 Day (24h)</option>
+            <option value="172800,0">Epic 2 Days (48h)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="defPieceStyle">Piece &amp; Board Style</label>
+          <select class="select-input" id="defPieceStyle">
+            <option value="staunton-3d">Staunton 3D</option>
+            <option value="staunton-classic">Staunton Classic</option>
+            <option value="flat-book">Flat Chess Book</option>
+            <option value="tournament-mat">Roll-Out Mat (Silicone)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Quick Tick Toggles -->
+      <label class="toggle-row"><span>Spacebar Turns Clock On/Off (unchecked = Switch)</span><input type="checkbox" id="chkSpaceToggle" checked /></label>
+      <label class="toggle-row"><span>Show Floating Board by Default</span><input type="checkbox" id="chkBoardOn" checked /></label>
+      <label class="toggle-row"><span>Show Notation Scorecard by Default</span><input type="checkbox" id="chkNotationOn" /></label>
+      <label class="toggle-row"><span>Symbols-Only Buttons (Hide Words)</span><input type="checkbox" id="chkSymbolsOnly" /></label>
+      <label class="toggle-row"><span>Clock Sound Effects</span><input type="checkbox" id="chkSoundOn" checked /></label>
+      <label class="toggle-row"><span>Drop Shadows</span><input type="checkbox" id="chkDropShadow" checked /></label>
+
+      <div class="form-grid">
+        <div class="field"><label for="colLightSq">Light Squares</label><input type="color" id="colLightSq" value="#eed9b7" style="height:34px; padding:2px;" /></div>
+        <div class="field"><label for="colDarkSq">Dark Squares</label><input type="color" id="colDarkSq" value="#a87951" style="height:34px; padding:2px;" /></div>
+        <div class="field"><label for="colBoardBorder">Board Border</label><input type="color" id="colBoardBorder" value="#593e28" style="height:34px; padding:2px;" /></div>
+        <div class="field"><label for="colWhitePiece">White Pieces</label><input type="color" id="colWhitePiece" value="#fff7e6" style="height:34px; padding:2px;" /></div>
+        <div class="field"><label for="colBlackPiece">Black Pieces</label><input type="color" id="colBlackPiece" value="#282c36" style="height:34px; padding:2px;" /></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn" id="resetDefaultsBtn" type="button">Restore Factory</button>
+        <button class="btn btn-primary" id="saveDefaultsBtn" type="button">Save Defaults</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player Profiles & Avatar Lightbox Modal -->
+  <div class="modal-backdrop" id="profileModal" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+    <div class="modal-card wide">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div class="modal-title" id="profileModalTitle">Player Profiles &amp; Photos</div>
+        <button class="btn" id="closeProfileModalBtn" type="button" style="padding:4px 10px;">Close</button>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>White Name</label><input type="text" id="profWName" placeholder="White" /></div>
+        <div class="field"><label>Black Name</label><input type="text" id="profBName" placeholder="Black" /></div>
+        <div class="field"><label>White Email</label><input type="email" id="profWEmail" placeholder="white@example.com" /></div>
+        <div class="field"><label>Black Email</label><input type="email" id="profBEmail" placeholder="black@example.com" /></div>
+        <div class="field"><label>White GitHub</label><input type="text" id="profWGithub" placeholder="@username" /></div>
+        <div class="field"><label>Black GitHub</label><input type="text" id="profBGithub" placeholder="@username" /></div>
+        <div class="field"><label>White Photo</label><input type="file" id="profWPhoto" accept="image/*" style="font-size:11px;" /></div>
+        <div class="field"><label>Black Photo</label><input type="file" id="profBPhoto" accept="image/*" style="font-size:11px;" /></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="saveProfilesBtn" type="button">Save Profiles</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Avatar Lightbox Modal -->
+  <div class="modal-backdrop" id="avatarLightbox" role="dialog" aria-modal="true">
+    <div class="modal-card" style="align-items:center; text-align:center;">
+      <img id="lightboxImg" alt="Player avatar" style="width:220px; height:220px; border-radius:14px; object-fit:cover; border:2px solid var(--border); display:none;" />
+      <div id="lightboxName" style="font-size:18px; font-weight:800;"></div>
+      <div id="lightboxMeta" style="font-size:13px; color:var(--text-muted);"></div>
+      <button class="btn btn-primary" id="closeLightboxBtn" type="button">Close</button>
+    </div>
+  </div>
+
+  <!-- Embedded Help & P2P Guide Modal -->
+  <div class="modal-backdrop" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+    <div class="modal-card wide" style="max-height:85vh; overflow-y:auto;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div class="modal-title" id="helpModalTitle">Pure Chess Clock — Help &amp; Guide</div>
+        <button class="btn" id="closeHelpBtn" type="button" style="padding:4px 10px;">Close</button>
+      </div>
+      <div class="help-section">
+        <h4>How to Connect Two Phones / PCs (P2P Same Network)</h4>
+        <p>1. Open this app on both devices and click <strong>2-Device Link</strong>.<br>
+        2. Pick <strong>My Side: White</strong> on Device 1 and <strong>My Side: Black</strong> on Device 2.<br>
+        3. On Device 1, click <strong>1. Create Invite Code</strong> and send the generated code to Device 2.<br>
+        4. On Device 2, paste the code, click <strong>2. Accept Invite &amp; Create Reply</strong>, and send the reply code back.<br>
+        5. On Device 1, paste the reply code and click <strong>3. Complete Connection</strong>. Clocks, boards, profiles, and notation now sync live!</p>
+      </div>
+      <div class="help-section">
+        <h4>Epic / 2-Day Correspondence Mode (GitHub Gist)</h4>
+        <p>For multi-day or untimed correspondence games, open <strong>2-Device Link → Epic / 2-Day (Gist)</strong>. Enter a shared GitHub Gist ID (and your GitHub token to push moves), then enable <strong>Auto-Pull / Auto-Push</strong> so your latest move syncs whenever you open the app.</p>
+      </div>
+      <div class="help-section">
+        <h4>Modes &amp; Keyboard Shortcuts</h4>
+        <p><strong>Zen Mode (Z):</strong> Hides all toolbars and menus so only the clock or board remains.<br>
+        <strong>Board Only:</strong> Full-size board with optional timed/untimed play.<br>
+        <strong>Slim Float:</strong> Compact draggable desktop bar.<br>
+        <strong>Shortcuts:</strong> <code>Space</code> On/Off · <code>Enter</code> Switch Turn · <code>R</code> Reset · <code>T</code> Theme · <code>F</code> Fullscreen · <code>Z</code> Zen Mode.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Time Modal -->
+  <div class="modal-backdrop" id="customModal" role="dialog" aria-modal="true" aria-labelledby="customModalTitle">
+    <div class="modal-card">
+      <div class="modal-title" id="customModalTitle">Custom Time Control</div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="customMin">Minutes</label>
+          <input type="number" id="customMin" min="0" max="180" value="5" />
+        </div>
+        <div class="field">
+          <label for="customSec">Extra Seconds</label>
+          <input type="number" id="customSec" min="0" max="59" value="0" />
+        </div>
+        <div class="field">
+          <label for="customInc">Increment (sec)</label>
+          <input type="number" id="customInc" min="0" max="60" value="3" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="cancelCustomBtn" type="button">Cancel</button>
+        <button class="btn btn-primary" id="applyCustomBtn" type="button">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2-Device Link Modal (WebRTC Network / Web Bluetooth / Local Tab) -->
+  <div class="modal-backdrop" id="linkModal" role="dialog" aria-modal="true" aria-labelledby="linkModalTitle">
+    <div class="modal-card wide">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div class="modal-title" id="linkModalTitle">2-Device Clock Link</div>
+        <button class="btn" id="closeLinkModalBtn" type="button" style="padding:4px 10px;">Close</button>
+      </div>
+
+      <div class="status-box" id="linkStatusBox">Status: Disconnected — choose a link method below.</div>
+
+      <div class="tab-row" role="tablist">
+        <button class="tab-btn active" data-link-tab="network" type="button">Same Network (P2P)</button>
+        <button class="tab-btn" data-link-tab="bluetooth" type="button">Bluetooth (BLE)</button>
+        <button class="tab-btn" data-link-tab="localtab" type="button">Same-Browser Tab</button>
+        <button class="tab-btn" data-link-tab="epicgist" type="button">Epic / 2-Day (Gist)</button>
+      </div>
+
+      <!-- Tab 1: Serverless WebRTC P2P -->
+      <div class="tab-panel active" id="tab-network">
+        <p class="helper-note">
+          Connect two devices on the same Wi-Fi/network (or internet) using standard WebRTC with zero server:
+          <strong>Player 1</strong> clicks <em>Create Invite</em> and sends the code to <strong>Player 2</strong>, who pastes it and clicks <em>Accept &amp; Create Reply</em>, then Player 1 pastes the reply.
+        </p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="rtcCreateOfferBtn" type="button">1. Create Invite Code</button>
+          <button class="btn" id="rtcAcceptOfferBtn" type="button">2. Accept Invite &amp; Create Reply</button>
+          <button class="btn" id="rtcAcceptAnswerBtn" type="button">3. Complete Connection</button>
+        </div>
+        <div class="field">
+          <label for="rtcLocalCode">Your Code (copy &amp; send to other player)</label>
+          <textarea class="code-box" id="rtcLocalCode" readonly placeholder="Generated invite or reply code will appear here..."></textarea>
+        </div>
+        <div class="field">
+          <label for="rtcRemoteCode">Paste Other Player's Code Here</label>
+          <textarea class="code-box" id="rtcRemoteCode" placeholder="Paste the invite or reply code from the other device..."></textarea>
+        </div>
+      </div>
+
+      <!-- Tab 2: Web Bluetooth -->
+      <div class="tab-panel" id="tab-bluetooth">
+        <p class="helper-note">
+          Connects via the standard <strong>Web Bluetooth API</strong> to a nearby BLE GATT peripheral or Bluetooth chess-clock bridge advertising the UART/Clock service. (Note: web browsers act as BLE centrals and cannot advertise as a GATT server directly to another browser without a BLE bridge/device.)
+        </p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="bleScanBtn" type="button">Scan &amp; Pair Bluetooth Device</button>
+          <button class="btn" id="bleDisconnectBtn" type="button">Disconnect</button>
+        </div>
+        <div class="status-box" id="bleSupportNote">Checking Web Bluetooth availability...</div>
+      </div>
+
+      <!-- Tab 3: Local BroadcastChannel -->
+      <div class="tab-panel" id="tab-localtab">
+        <p class="helper-note">
+          Instant sync between two tabs of this page in the same browser using standard <code>BroadcastChannel</code>. Great for testing a two-sided setup right away.
+        </p>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" id="localRoomInput" value="chess-room-1" style="flex:1; padding:7px 10px; border-radius:9px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-family:var(--font-mono); font-size:13px;" />
+          <button class="btn btn-primary" id="localConnectBtn" type="button">Join Room</button>
+          <button class="btn" id="localDisconnectBtn" type="button">Leave</button>
+        </div>
+      </div>
+
+      <!-- Tab 4: Epic / Correspondence Mode (Zero-Auth JSON Bin or GitHub Gist) -->
+      <div class="tab-panel" id="tab-epicgist">
+        <p class="helper-note">
+          Play multi-day or untimed games with <strong>zero login</strong> using a public JSON Bin (<code>jsonblob.com</code>), any custom CORS-enabled JSON/XML/text URL, or a GitHub Gist.
+        </p>
+        <div class="field">
+          <label for="cloudProviderSelect">Cloud Storage Provider</label>
+          <select class="select-input" id="cloudProviderSelect">
+            <option value="jsonblob">No-Auth JSON Bin (jsonblob.com)</option>
+            <option value="custom">Custom JSON/Text URL (GET / PUT)</option>
+            <option value="gist">GitHub Gist (Token for Push)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="gistIdInput" id="cloudIdLabel">Shared Game Blob ID or URL</label>
+          <input type="text" id="gistIdInput" placeholder="Click 'Create New Game ID' or paste shared ID/URL" style="padding:7px 10px; border-radius:9px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-family:var(--font-mono); font-size:12px;" />
+        </div>
+        <div class="field" id="gistTokenField" style="display:none;">
+          <label for="gistTokenInput">GitHub Token (only needed for GitHub Gist push)</label>
+          <input type="password" id="gistTokenInput" placeholder="ghp_... (saved locally)" style="padding:7px 10px; border-radius:9px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-family:var(--font-mono); font-size:12px;" />
+        </div>
+        <label class="toggle-row">
+          <span>Auto-Pull on Startup &amp; Auto-Push After Move</span>
+          <input type="checkbox" id="gistAutoSyncChk" />
+        </label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn" id="cloudCreateBtn" type="button">Create New Game ID</button>
+          <button class="btn btn-primary" id="gistPullBtn" type="button">Pull Latest Move</button>
+          <button class="btn" id="gistPushBtn" type="button">Push Move</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Saved Games Record Modal -->
+  <div class="modal-backdrop" id="savedGamesModal" role="dialog" aria-modal="true" aria-labelledby="savedGamesTitle">
+    <div class="modal-card wide">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div class="modal-title" id="savedGamesTitle">Saved Game Records</div>
+        <button class="btn" id="closeSavedGamesBtn" type="button" style="padding:4px 10px;">Close</button>
+      </div>
+      <div class="status-box" id="savedNoticeBox">Games are saved locally in your browser. Export any game as PGN.</div>
+      <div class="status-box" id="playerStatsBox" style="font-size:12px;">Stats: 0 games recorded</div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+        <button class="btn" id="exportAllPgnBtn" type="button" style="font-size:11.5px; padding:5px 9px;">Export All (.pgn)</button>
+        <button class="btn" id="exportAllJsonBtn" type="button" style="font-size:11.5px; padding:5px 9px;">Export Backup (.json)</button>
+        <label class="btn" style="font-size:11.5px; padding:5px 9px; cursor:pointer;">
+          Import (.json / .pgn)
+          <input type="file" id="importHistoryInput" accept=".json,.pgn,.txt" style="display:none;" />
+        </label>
+      </div>
+      <div class="saved-list" id="savedList"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // State
+      const state = {
+        initialMs: 180000,
+        incrementMs: 2000,
+        msA: 180000,
+        msB: 180000,
+        movesA: 0,
+        movesB: 0,
+        sideA: 'white',
+        sideB: 'black',
+        activeTurn: null, // 'A' | 'B' | null
+        running: false,
+        flagged: null, // 'A' | 'B' | null
+        lastTick: 0,
+        rafId: null,
+        soundOn: true,
+        clockStyle: 'digital', // 'digital' | 'hourglass' | 'analog'
+        spaceMode: 'toggle', // 'toggle' (On/Off) | 'switch' (Switch Turn)
+        slimMode: false,
+        theme: 'dark',
+        linkMode: false,
+        mySide: 'white', // 'white' | 'black'
+        singleFocus: true,
+        linkType: null, // 'webrtc' | 'bluetooth' | 'broadcast' | null
+        linkConnected: false,
+        notationMode: false,
+        whiteName: 'White',
+        blackName: 'Black',
+        moveLog: [] // [{ ply, side, notation, remainingMs }]
+      };
+
+      // DOM refs
+      const $ = (id) => document.getElementById(id);
+      const appShell = $('appShell');
+      const padA = $('padA');
+      const padB = $('padB');
+      const timeA = $('timeA');
+      const timeB = $('timeB');
+      const hgTimeA = $('hgTimeA');
+      const hgTimeB = $('hgTimeB');
+      const anTimeA = $('anTimeA');
+      const anTimeB = $('anTimeB');
+      const statusA = $('statusA');
+      const statusB = $('statusB');
+      const movesAEl = $('movesA');
+      const movesBEl = $('movesB');
+      const incAEl = $('incA');
+      const incBEl = $('incB');
+      const labelAEl = $('labelA');
+      const labelBEl = $('labelB');
+
+      const hgTopA = $('hgTopA');
+      const hgBotA = $('hgBotA');
+      const hgStreamA = $('hgStreamA');
+      const hgTopB = $('hgTopB');
+      const hgBotB = $('hgBotB');
+      const hgStreamB = $('hgStreamB');
+
+      const minHandA = $('minHandA');
+      const secHandA = $('secHandA');
+      const flagA = $('flagA');
+      const minHandB = $('minHandB');
+      const secHandB = $('secHandB');
+      const flagB = $('flagB');
+
+      const playPauseBtn = $('playPauseBtn');
+      const switchTurnBtn = $('switchTurnBtn');
+      const resetBtn = $('resetBtn');
+      const swapSidesBtn = $('swapSidesBtn');
+      const soundBtn = $('soundBtn');
+      const spaceModeBtn = $('spaceModeBtn');
+      const spaceHintLabel = $('spaceHintLabel');
+      const presetSelect = $('presetSelect');
+      const themeBtn = $('themeBtn');
+      const themeIcon = $('themeIcon');
+      const fullscreenBtn = $('fullscreenBtn');
+      const slimModeBtn = $('slimModeBtn');
+
+      const slimDock = $('slimDock');
+      const slimDragHandle = $('slimDragHandle');
+      const slimSideA = $('slimSideA');
+      const slimSideB = $('slimSideB');
+      const slimTimeA = $('slimTimeA');
+      const slimTimeB = $('slimTimeB');
+      const slimLabelA = $('slimLabelA');
+      const slimLabelB = $('slimLabelB');
+      const slimPlayBtn = $('slimPlayBtn');
+      const slimResetBtn = $('slimResetBtn');
+      const slimThemeBtn = $('slimThemeBtn');
+      const expandFromSlimBtn = $('expandFromSlimBtn');
+
+      const customModal = $('customModal');
+      const customMin = $('customMin');
+      const customSec = $('customSec');
+      const customInc = $('customInc');
+      const cancelCustomBtn = $('cancelCustomBtn');
+      const applyCustomBtn = $('applyCustomBtn');
+
+      // Build analog tick marks once
+      function buildAnalogTicks(groupId) {
+        const g = $(groupId);
+        if (!g) return;
+        let html = '';
+        for (let i = 0; i < 60; i++) {
+          const angle = i * 6;
+          const isMajor = i % 5 === 0;
+          const r1 = isMajor ? 74 : 79;
+          const r2 = 84;
+          const rad = (angle - 90) * (Math.PI / 180);
+          const x1 = (100 + r1 * Math.cos(rad)).toFixed(2);
+          const y1 = (100 + r1 * Math.sin(rad)).toFixed(2);
+          const x2 = (100 + r2 * Math.cos(rad)).toFixed(2);
+          const y2 = (100 + r2 * Math.sin(rad)).toFixed(2);
+          html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--text-muted)" stroke-width="${isMajor ? 2.6 : 1.2}" stroke-linecap="round" />`;
+        }
+        g.innerHTML = html;
+      }
+      buildAnalogTicks('ticksA');
+      buildAnalogTicks('ticksB');
+
+      // Web Audio API synthesized sounds (zero external assets)
+      let audioCtx = null;
+      function playTone(freq, duration, type, gainVal) {
+        if (!state.soundOn) return;
+        try {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (!Ctx) return;
+          if (!audioCtx) audioCtx = new Ctx();
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type || 'triangle';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(gainVal || 0.12, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      function playClick() {
+        playTone(520, 0.045, 'triangle', 0.14);
+      }
+
+      function playFlagAlarm() {
+        playTone(340, 0.28, 'sawtooth', 0.15);
+        setTimeout(() => playTone(260, 0.35, 'sawtooth', 0.15), 220);
+      }
+
+      // Formatting
+      function formatTime(ms) {
+        const clamped = Math.max(0, ms);
+        const totalTenths = Math.ceil(clamped / 100);
+        const tenths = totalTenths % 10;
+        const totalSec = Math.floor(totalTenths / 10);
+        const hrs = Math.floor(totalSec / 3600);
+        const mins = Math.floor((totalSec % 3600) / 60);
+        const secs = totalSec % 60;
+
+        if (hrs > 0) {
+          return `${hrs}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+        if (clamped < 20000) {
+          return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${tenths}`;
+        }
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }
+
+      // Render UI
+      function render() {
+        const strA = formatTime(state.msA);
+        const strB = formatTime(state.msB);
+
+        timeA.textContent = strA;
+        timeB.textContent = strB;
+        hgTimeA.textContent = strA;
+        hgTimeB.textContent = strB;
+        anTimeA.textContent = strA;
+        anTimeB.textContent = strB;
+        slimTimeA.textContent = strA;
+        slimTimeB.textContent = strB;
+        if ($('boTimeA')) $('boTimeA').textContent = strA;
+        if ($('boTimeB')) $('boTimeB').textContent = strB;
+
+        // Low-time color cues
+        [timeA, hgTimeA, anTimeA].forEach((el) => {
+          el.classList.toggle('critical-time', state.msA > 0 && state.msA <= 10000);
+          el.classList.toggle('low-time', state.msA > 10000 && state.msA <= 30000);
+        });
+        [timeB, hgTimeB, anTimeB].forEach((el) => {
+          el.classList.toggle('critical-time', state.msB > 0 && state.msB <= 10000);
+          el.classList.toggle('low-time', state.msB > 10000 && state.msB <= 30000);
+        });
+
+        // Side labels & dots
+        padA.dataset.side = state.sideA;
+        padB.dataset.side = state.sideB;
+        const wLabel = state.notationMode && state.whiteName.trim() ? state.whiteName.trim() : 'White';
+        const bLabel = state.notationMode && state.blackName.trim() ? state.blackName.trim() : 'Black';
+        labelAEl.textContent = state.sideA === 'white' ? wLabel : bLabel;
+        labelBEl.textContent = state.sideB === 'white' ? wLabel : bLabel;
+        slimLabelA.textContent = labelAEl.textContent;
+        slimLabelB.textContent = labelBEl.textContent;
+
+        const dotA = padA.querySelector('.piece-dot');
+        const dotB = padB.querySelector('.piece-dot');
+        dotA.className = `piece-dot ${state.sideA}`;
+        dotB.className = `piece-dot ${state.sideB}`;
+
+        const sDotA = slimSideA.querySelector('.piece-dot');
+        const sDotB = slimSideB.querySelector('.piece-dot');
+        sDotA.className = `piece-dot ${state.sideA}`;
+        sDotB.className = `piece-dot ${state.sideB}`;
+
+        // Active / Inactive / Flagged states
+        const activeA = state.running && state.activeTurn === 'A';
+        const activeB = state.running && state.activeTurn === 'B';
+
+        padA.classList.toggle('active', activeA);
+        padB.classList.toggle('active', activeB);
+        padA.classList.toggle('inactive-dim', state.running && !activeA);
+        padB.classList.toggle('inactive-dim', state.running && !activeB);
+        padA.classList.toggle('flagged', state.flagged === 'A');
+        padB.classList.toggle('flagged', state.flagged === 'B');
+
+        slimSideA.classList.toggle('active', activeA);
+        slimSideB.classList.toggle('active', activeB);
+        slimSideA.classList.toggle('flagged', state.flagged === 'A');
+        slimSideB.classList.toggle('flagged', state.flagged === 'B');
+        if ($('boPillA')) {
+          $('boPillA').classList.toggle('active', activeA);
+          $('boPillA').classList.toggle('flagged', state.flagged === 'A');
+        }
+        if ($('boPillB')) {
+          $('boPillB').classList.toggle('active', activeB);
+          $('boPillB').classList.toggle('flagged', state.flagged === 'B');
+        }
+
+        // Status pills
+        if (state.flagged === 'A') statusA.textContent = 'Time Out';
+        else if (activeA) statusA.textContent = 'Running';
+        else if (state.activeTurn === 'A' && !state.running) statusA.textContent = 'Paused';
+        else statusA.textContent = 'Waiting';
+
+        if (state.flagged === 'B') statusB.textContent = 'Time Out';
+        else if (activeB) statusB.textContent = 'Running';
+        else if (state.activeTurn === 'B' && !state.running) statusB.textContent = 'Paused';
+        else statusB.textContent = 'Waiting';
+
+        // Moves & increment
+        movesAEl.textContent = `Moves: ${state.movesA}`;
+        movesBEl.textContent = `Moves: ${state.movesB}`;
+        const incText = `+${Math.round(state.incrementMs / 1000)}s inc`;
+        incAEl.textContent = incText;
+        incBEl.textContent = incText;
+
+        // Play/Pause buttons
+        const playLabel = state.flagged ? 'Finished' : (state.running ? 'Pause' : (state.activeTurn ? 'Resume' : 'Start'));
+        ($('playPauseLabel') || playPauseBtn).textContent = playLabel;
+        slimPlayBtn.textContent = playLabel;
+        playPauseBtn.disabled = Boolean(state.flagged);
+        slimPlayBtn.disabled = Boolean(state.flagged);
+
+        // Hourglass sand levels (70px total bulb height)
+        const ratioA = state.initialMs > 0 ? Math.max(0, Math.min(1, state.msA / state.initialMs)) : 0;
+        const ratioB = state.initialMs > 0 ? Math.max(0, Math.min(1, state.msB / state.initialMs)) : 0;
+
+        const topHA = 70 * ratioA;
+        hgTopA.setAttribute('y', (92 - topHA).toFixed(2));
+        hgTopA.setAttribute('height', topHA.toFixed(2));
+        const botHA = 70 * (1 - ratioA);
+        hgBotA.setAttribute('y', (168 - botHA).toFixed(2));
+        hgBotA.setAttribute('height', botHA.toFixed(2));
+        hgStreamA.classList.toggle('flowing', activeA && ratioA > 0);
+
+        const topHB = 70 * ratioB;
+        hgTopB.setAttribute('y', (92 - topHB).toFixed(2));
+        hgTopB.setAttribute('height', topHB.toFixed(2));
+        const botHB = 70 * (1 - ratioB);
+        hgBotB.setAttribute('y', (168 - botHB).toFixed(2));
+        hgBotB.setAttribute('height', botHB.toFixed(2));
+        hgStreamB.classList.toggle('flowing', activeB && ratioB > 0);
+
+        // Analog hands (countdown toward 12 o'clock = 0:00)
+        updateAnalogHands(state.msA, minHandA, secHandA, flagA);
+        updateAnalogHands(state.msB, minHandB, secHandB, flagB);
+      }
+
+      function updateAnalogHands(ms, minEl, secEl, flagEl) {
+        const totalSec = ms / 1000;
+        const secAngle = -(totalSec % 60) * 6;
+        const minAngle = -((totalSec / 60) % 60) * 6;
+        secEl.setAttribute('transform', `rotate(${secAngle.toFixed(2)} 100 100)`);
+        minEl.setAttribute('transform', `rotate(${minAngle.toFixed(2)} 100 100)`);
+        flagEl.setAttribute('opacity', ms > 0 && ms <= 60000 ? '0.95' : '0.2');
+      }
+
+      // Timer Loop
+      function tick(now) {
+        if (!state.running) return;
+        const dt = now - state.lastTick;
+        state.lastTick = now;
+
+        if (state.activeTurn === 'A') {
+          state.msA = Math.max(0, state.msA - dt);
+          if (state.msA === 0) {
+            state.flagged = 'A';
+            state.running = false;
+            playFlagAlarm();
+          }
+        } else if (state.activeTurn === 'B') {
+          state.msB = Math.max(0, state.msB - dt);
+          if (state.msB === 0) {
+            state.flagged = 'B';
+            state.running = false;
+            playFlagAlarm();
+          }
+        }
+
+        render();
+        if (state.running) {
+          state.rafId = requestAnimationFrame(tick);
+        }
+      }
+
+      function startLoop() {
+        if (state.rafId) cancelAnimationFrame(state.rafId);
+        state.lastTick = performance.now();
+        state.rafId = requestAnimationFrame(tick);
+      }
+
+      function togglePlayPause() {
+        if (state.flagged) return;
+        if (!state.activeTurn) {
+          // Start with whichever side is White
+          state.activeTurn = state.sideA === 'white' ? 'A' : 'B';
+        }
+        state.running = !state.running;
+        playClick();
+        if (state.running) {
+          startLoop();
+        } else if (state.rafId) {
+          cancelAnimationFrame(state.rafId);
+        }
+        render();
+      }
+
+      function switchTurn(pressedPad) {
+        if (state.flagged) return;
+
+        // If idle, pressing a pad starts the opponent's clock
+        if (!state.activeTurn) {
+          if (pressedPad === 'A') {
+            state.activeTurn = 'B';
+          } else if (pressedPad === 'B') {
+            state.activeTurn = 'A';
+          } else {
+            state.activeTurn = state.sideA === 'white' ? 'A' : 'B';
+          }
+          state.running = true;
+          playClick();
+          startLoop();
+          render();
+          return;
+        }
+
+        // If paused, pressing the active pad resumes; or if switch button used, switches
+        if (!state.running) {
+          if (!pressedPad || pressedPad === state.activeTurn) {
+            state.running = true;
+            playClick();
+            startLoop();
+            render();
+          }
+          return;
+        }
+
+        // Only the active player's pad (or generic switch) ends their turn
+        if (pressedPad && pressedPad !== state.activeTurn) return;
+
+        if (state.activeTurn === 'A') {
+          state.msA += state.incrementMs;
+          state.movesA += 1;
+          state.activeTurn = 'B';
+        } else {
+          state.msB += state.incrementMs;
+          state.movesB += 1;
+          state.activeTurn = 'A';
+        }
+        playClick();
+        state.lastTick = performance.now();
+        render();
+      }
+
+      function resetClock(newInitialMs, newIncMs) {
+        if (state.rafId) cancelAnimationFrame(state.rafId);
+        if (typeof newInitialMs === 'number') state.initialMs = newInitialMs;
+        if (typeof newIncMs === 'number') state.incrementMs = newIncMs;
+        state.msA = state.initialMs;
+        state.msB = state.initialMs;
+        state.movesA = 0;
+        state.movesB = 0;
+        state.activeTurn = null;
+        state.running = false;
+        state.flagged = null;
+        render();
+      }
+
+      // Theme
+      function applyTheme(theme) {
+        state.theme = theme;
+        document.documentElement.setAttribute('data-theme', theme);
+        themeIcon.innerHTML = theme === 'dark'
+          ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>'
+          : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+        try { localStorage.setItem('pure_chess_theme', theme); } catch (e) {}
+      }
+
+      function toggleTheme() {
+        applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+      }
+
+      // Clock Style
+      document.querySelectorAll('.seg-btn[data-style]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.seg-btn[data-style]').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.clockStyle = btn.dataset.style;
+          appShell.setAttribute('data-clock-style', state.clockStyle);
+        });
+      });
+
+      // Pad & Button Listeners
+      padA.addEventListener('click', () => switchTurn('A'));
+      padB.addEventListener('click', () => switchTurn('B'));
+      slimSideA.addEventListener('click', () => switchTurn('A'));
+      slimSideB.addEventListener('click', () => switchTurn('B'));
+
+      playPauseBtn.addEventListener('click', () => togglePlayPause());
+      slimPlayBtn.addEventListener('click', () => togglePlayPause());
+      switchTurnBtn.addEventListener('click', () => switchTurn(null));
+      resetBtn.addEventListener('click', () => resetClock());
+      slimResetBtn.addEventListener('click', () => resetClock());
+
+      swapSidesBtn.addEventListener('click', () => {
+        const tmpSide = state.sideA;
+        state.sideA = state.sideB;
+        state.sideB = tmpSide;
+        const tmpMs = state.msA;
+        state.msA = state.msB;
+        state.msB = tmpMs;
+        const tmpMoves = state.movesA;
+        state.movesA = state.movesB;
+        state.movesB = tmpMoves;
+        if (state.activeTurn === 'A') state.activeTurn = 'B';
+        else if (state.activeTurn === 'B') state.activeTurn = 'A';
+        if (state.flagged === 'A') state.flagged = 'B';
+        else if (state.flagged === 'B') state.flagged = 'A';
+        render();
+      });
+
+      soundBtn.addEventListener('click', () => {
+        state.soundOn = !state.soundOn;
+        ($('soundLabel') || soundBtn).textContent = `Sound: ${state.soundOn ? 'On' : 'Off'}`;
+        if (state.soundOn) playClick();
+      });
+
+      spaceModeBtn.addEventListener('click', () => {
+        state.spaceMode = state.spaceMode === 'toggle' ? 'switch' : 'toggle';
+        ($('spaceModeLabel') || spaceModeBtn).textContent = state.spaceMode === 'toggle' ? 'Space: On/Off' : 'Space: Switch';
+        spaceHintLabel.textContent = state.spaceMode === 'toggle' ? 'Turn clock On / Off' : 'Switch Turn';
+      });
+
+      themeBtn.addEventListener('click', toggleTheme);
+      slimThemeBtn.addEventListener('click', toggleTheme);
+
+      // Fullscreen
+      fullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          }
+        } else if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      });
+
+      // Slim Floating Mode
+      function setSlimMode(enabled) {
+        state.slimMode = enabled;
+        appShell.classList.toggle('slim-mode', enabled);
+        document.body.classList.toggle('is-slim', enabled);
+      }
+
+      slimModeBtn.addEventListener('click', () => setSlimMode(true));
+      expandFromSlimBtn.addEventListener('click', () => setSlimMode(false));
+
+      // Draggable Slim Dock
+      let dragging = false;
+      let dragOffsetX = 0;
+      let dragOffsetY = 0;
+      slimDragHandle.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('button')) return;
+        dragging = true;
+        const rect = slimDock.getBoundingClientRect();
+        slimDock.style.transform = 'none';
+        slimDock.style.left = `${rect.left}px`;
+        slimDock.style.top = `${rect.top}px`;
+        dragOffsetX = e.clientX - rect.left;
+        dragOffsetY = e.clientY - rect.top;
+        slimDragHandle.setPointerCapture(e.pointerId);
+      });
+      slimDragHandle.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const x = Math.max(8, Math.min(window.innerWidth - slimDock.offsetWidth - 8, e.clientX - dragOffsetX));
+        const y = Math.max(8, Math.min(window.innerHeight - slimDock.offsetHeight - 8, e.clientY - dragOffsetY));
+        slimDock.style.left = `${x}px`;
+        slimDock.style.top = `${y}px`;
+      });
+      slimDragHandle.addEventListener('pointerup', () => { dragging = false; });
+
+      // Presets & Custom Modal
+      let lastPresetValue = '180,2';
+      presetSelect.addEventListener('change', () => {
+        const val = presetSelect.value;
+        if (val === 'custom') {
+          customModal.classList.add('open');
+          return;
+        }
+        lastPresetValue = val;
+        const [sec, inc] = val.split(',').map(Number);
+        resetClock(sec * 1000, inc * 1000);
+      });
+
+      cancelCustomBtn.addEventListener('click', () => {
+        customModal.classList.remove('open');
+        presetSelect.value = lastPresetValue;
+      });
+
+      applyCustomBtn.addEventListener('click', () => {
+        const m = Math.max(0, parseInt(customMin.value, 10) || 0);
+        const s = Math.max(0, Math.min(59, parseInt(customSec.value, 10) || 0));
+        const inc = Math.max(0, parseInt(customInc.value, 10) || 0);
+        const totalMs = Math.max(1000, (m * 60 + s) * 1000);
+        customModal.classList.remove('open');
+        resetClock(totalMs, inc * 1000);
+      });
+
+      // Keyboard Shortcuts (Spacebar On/Off, Enter Switch, R Reset, T Theme, F Fullscreen)
+      window.addEventListener('keydown', (e) => {
+        if (customModal.classList.contains('open')) {
+          if (e.key === 'Escape') cancelCustomBtn.click();
+          return;
+        }
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+
+        if (e.code === 'Space' || e.key === ' ') {
+          e.preventDefault();
+          if (state.spaceMode === 'toggle') {
+            togglePlayPause();
+          } else {
+            switchTurn(null);
+          }
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          switchTurn(null);
+        } else if (e.key === 'r' || e.key === 'R') {
+          resetClock();
+        } else if (e.key === 't' || e.key === 'T') {
+          toggleTheme();
+        } else if (e.key === 'f' || e.key === 'F') {
+          fullscreenBtn.click();
+        }
+      });
+
+      // === 2-Device Link Mode (WebRTC P2P, Web Bluetooth, BroadcastChannel) ===
+      const linkModeBtn = $('linkModeBtn');
+      const linkBanner = $('linkBanner');
+      const linkDot = $('linkDot');
+      const linkBannerText = $('linkBannerText');
+      const mySideWhiteBtn = $('mySideWhiteBtn');
+      const mySideBlackBtn = $('mySideBlackBtn');
+      const focusToggleBtn = $('focusToggleBtn');
+      const openLinkModalBtn = $('openLinkModalBtn');
+      const exitLinkModeBtn = $('exitLinkModeBtn');
+      const linkModal = $('linkModal');
+      const closeLinkModalBtn = $('closeLinkModalBtn');
+      const linkStatusBox = $('linkStatusBox');
+
+      const rtcCreateOfferBtn = $('rtcCreateOfferBtn');
+      const rtcAcceptOfferBtn = $('rtcAcceptOfferBtn');
+      const rtcAcceptAnswerBtn = $('rtcAcceptAnswerBtn');
+      const rtcLocalCode = $('rtcLocalCode');
+      const rtcRemoteCode = $('rtcRemoteCode');
+
+      const bleScanBtn = $('bleScanBtn');
+      const bleDisconnectBtn = $('bleDisconnectBtn');
+      const bleSupportNote = $('bleSupportNote');
+
+      const localRoomInput = $('localRoomInput');
+      const localConnectBtn = $('localConnectBtn');
+      const localDisconnectBtn = $('localDisconnectBtn');
+
+      let rtcPeer = null;
+      let rtcChannel = null;
+      let bleDevice = null;
+      let bleCharacteristic = null;
+      let bcChannel = null;
+
+      function updateLinkUI() {
+        appShell.classList.toggle('link-mode', state.linkMode);
+        appShell.classList.toggle('single-focus', state.linkMode && state.singleFocus);
+        linkModeBtn.classList.toggle('connected', state.linkConnected);
+        linkDot.classList.toggle('online', state.linkConnected);
+
+        mySideWhiteBtn.classList.toggle('active', state.mySide === 'white');
+        mySideBlackBtn.classList.toggle('active', state.mySide === 'black');
+        focusToggleBtn.textContent = state.singleFocus ? 'View: My Side Only' : 'View: Both Clocks';
+
+        const opponentPadA = state.sideA !== state.mySide;
+        const opponentPadB = state.sideB !== state.mySide;
+        padA.classList.toggle('hidden-opponent', state.linkMode && state.singleFocus && opponentPadA);
+        padB.classList.toggle('hidden-opponent', state.linkMode && state.singleFocus && opponentPadB);
+
+        if (state.linkConnected) {
+          const via = state.linkType === 'webrtc' ? 'Network P2P' : state.linkType === 'bluetooth' ? 'Bluetooth' : 'Local Tab';
+          linkBannerText.textContent = `Connected (${via}) · Playing as ${state.mySide.toUpperCase()}`;
+          linkStatusBox.textContent = `Status: Connected via ${via}! Both clocks are synced.`;
+        } else {
+          linkBannerText.textContent = `2-Device Link Mode (${state.mySide.toUpperCase()}) · Not connected`;
+        }
+      }
+
+      function sendSyncMessage(action) {
+        if (!state.linkConnected) return;
+        const payload = JSON.stringify({
+          action,
+          msA: Math.round(state.msA),
+          msB: Math.round(state.msB),
+          movesA: state.movesA,
+          movesB: state.movesB,
+          activeTurn: state.activeTurn,
+          running: state.running,
+          flagged: state.flagged,
+          initialMs: state.initialMs,
+          incrementMs: state.incrementMs,
+          moveLog: state.moveLog,
+          profiles: typeof profiles !== 'undefined' ? profiles : undefined,
+          boardState: {
+            board: chess.board,
+            turn: chess.turn,
+            castling: chess.castling,
+            ep: chess.ep,
+            lastMoveSquares
+          },
+          sentAt: Date.now()
+        });
+
+        try {
+          if (state.linkType === 'webrtc' && rtcChannel && rtcChannel.readyState === 'open') {
+            rtcChannel.send(payload);
+          } else if (state.linkType === 'broadcast' && bcChannel) {
+            bcChannel.postMessage(payload);
+          } else if (state.linkType === 'bluetooth' && bleCharacteristic) {
+            const bytes = new TextEncoder().encode(payload + '\n');
+            bleCharacteristic.writeValue(bytes).catch(() => {});
+          }
+        } catch (err) {}
+      }
+
+      function applyRemoteSync(raw) {
+        try {
+          const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          if (!data || typeof data.msA !== 'number') return;
+          if (state.rafId) cancelAnimationFrame(state.rafId);
+
+          state.initialMs = data.initialMs ?? state.initialMs;
+          state.incrementMs = data.incrementMs ?? state.incrementMs;
+          state.msA = data.msA;
+          state.msB = data.msB;
+          state.movesA = data.movesA;
+          state.movesB = data.movesB;
+          state.activeTurn = data.activeTurn;
+          state.running = Boolean(data.running);
+          state.flagged = data.flagged || null;
+          if (data.profiles) {
+            profiles = { ...profiles, ...data.profiles };
+            state.whiteName = profiles.white.name || state.whiteName;
+            state.blackName = profiles.black.name || state.blackName;
+            whiteNameInput.value = state.whiteName;
+            blackNameInput.value = state.blackName;
+            if (typeof renderAvatars === 'function') renderAvatars();
+          }
+          if (Array.isArray(data.moveLog)) {
+            state.moveLog = data.moveLog;
+            renderMoveLog();
+          }
+          if (data.boardState && Array.isArray(data.boardState.board)) {
+            chess.board = data.boardState.board;
+            chess.turn = data.boardState.turn;
+            chess.castling = data.boardState.castling;
+            chess.ep = data.boardState.ep || null;
+            lastMoveSquares = data.boardState.lastMoveSquares || null;
+            selectedSq = null;
+            legalTargets = [];
+            boardStatusText.textContent = `${chess.turn === 'w' ? 'White' : 'Black'} to move`;
+            // Tear-Away Standalone Board Window
+      const tearBoardBtn = $('tearBoardBtn');
+      const tearChannel = new BroadcastChannel('pure_chess_tearaway_board');
+      let tearWin = null;
+
+      function broadcastToTearWindow() {
+        tearChannel.postMessage({
+          type: 'BOARD_UPDATE',
+          board: chess.board,
+          turn: chess.turn,
+          flipped: boardFlipped,
+          style: pieceStyleSelect.value,
+          lastMoveSquares,
+          theme: state.theme
+        });
+      }
+
+      tearChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'TEAR_MOVE') {
+          const { fromR, fromC, moveObj } = e.data;
+          executeBoardMove(fromR, fromC, moveObj);
+        } else if (e.data && e.data.type === 'TEAR_READY') {
+          broadcastToTearWindow();
+        }
+      };
+
+      const origRenderBoard = renderBoard;
+      renderBoard = function () {
+        origRenderBoard();
+        broadcastToTearWindow();
+      };
+
+      tearBoardBtn.addEventListener('click', () => {
+        tearWin = window.open('', 'PureChessTearBoard', 'width=460,height=520,resizable=yes');
+        if (!tearWin) {
+          boardStatusText.textContent = 'Pop-up blocked — allow pop-ups or drag this board';
+          return;
+        }
+        const tearDoc = `<!DOCTYPE html><html data-theme="${state.theme}"><head><title>Chessboard — Pure Chess Clock</title><style>
+          body{margin:0;padding:12px;background:#0d1017;color:#f3f5f9;font-family:system-ui,sans-serif;display:flex;flex-direction:column;height:100vh;box-sizing:border-box;gap:8px}
+          .grid{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:100%;max-height:calc(100vh - 54px);aspect-ratio:1/1;margin:auto;border:4px solid #593e28;border-radius:8px;overflow:hidden}
+          .sq{position:relative;display:flex;align-items:center;justify-content:center;aspect-ratio:1/1;cursor:pointer;min-width:0;min-height:0}
+          .light{background:#eed9b7}.dark{background:#a87951}.sel{box-shadow:inset 0 0 0 3px #3b82f6;background:#93c5fd!important}
+          .sq svg{width:86%;height:86%;pointer-events:none}
+        </style></head><body>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;">
+            <span id="tStat">White to move</span><span>Tear-Away Board (Synced)</span>
+          </div>
+          <div class="grid" id="tGrid"></div>
+          <script>
+            const ch=new BroadcastChannel('pure_chess_tearaway_board');
+            let st=null, sel=null;
+            ch.onmessage=(e)=>{ if(e.data&&e.data.type==='BOARD_UPDATE'){ st=e.data; draw(); } };
+            function draw(){
+              if(!st)return;
+              document.getElementById('tStat').textContent=(st.turn==='w'?'White':'Black')+' to move';
+              let h='';
+              for(let vr=0;vr<8;vr++)for(let vc=0;vc<8;vc++){
+                const r=st.flipped?7-vr:vr, c=st.flipped?7-vc:vc;
+                const p=st.board[r][c];
+                const isSel=sel&&sel.r===r&&sel.c===c;
+                h+='<div class="sq '+((r+c)%2===0?'light':'dark')+(isSel?' sel':'')+'" data-r="'+r+'" data-c="'+c+'">'+(p?window.opener.getPieceSvgForTear(p,st.style):'')+'</div>';
+              }
+              document.getElementById('tGrid').innerHTML=h;
+            }
+            document.getElementById('tGrid').addEventListener('click',(e)=>{
+              const sq=e.target.closest('.sq'); if(!sq||!st)return;
+              const r=+sq.dataset.r, c=+sq.dataset.c;
+              if(sel){
+                const legal=window.opener.getLegalMovesForTear(sel.r,sel.c);
+                const m=legal.find(x=>x.r===r&&x.c===c);
+                if(m){ ch.postMessage({type:'TEAR_MOVE',fromR:sel.r,fromC:sel.c,moveObj:m}); sel=null; return; }
+              }
+              if(st.board[r][c]&&st.board[r][c][0]===st.turn) sel={r,c}; else sel=null;
+              draw();
+            });
+            ch.postMessage({type:'TEAR_READY'});
+          <\/script>  <div class="micro-brand" aria-hidden="true">HOLOCENE GAMES</div>
+</body></html>`;
+        tearWin.document.open();
+        tearWin.document.write(tearDoc);
+        tearWin.document.close();
+      });
+
+      window.getPieceSvgForTear = getPieceSvg;
+      window.getLegalMovesForTear = getLegalMoves;
+
+      renderBoard();
+          }
+
+          if (state.running) {
+            playClick();
+            startLoop();
+          }
+          render();
+        } catch (err) {}
+      }
+
+      // Hook into existing actions so local clicks/Spacebar broadcast to linked peer
+      const origTogglePlayPause = togglePlayPause;
+      togglePlayPause = function () {
+        origTogglePlayPause();
+        sendSyncMessage('toggle');
+      };
+
+      const origSwitchTurn = switchTurn;
+      switchTurn = function (pressedPad) {
+        if (state.linkMode && state.linkConnected && pressedPad) {
+          const pressedSide = pressedPad === 'A' ? state.sideA : state.sideB;
+          if (pressedSide !== state.mySide) return; // Only control your own side when linked
+        }
+        origSwitchTurn(pressedPad);
+        sendSyncMessage('switch');
+      };
+
+      const origResetClock = resetClock;
+      resetClock = function (newInitialMs, newIncMs) {
+        origResetClock(newInitialMs, newIncMs);
+        sendSyncMessage('reset');
+      };
+
+      // Modal & Tab Controls
+      document.querySelectorAll('.tab-btn[data-link-tab]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn[data-link-tab]').forEach((b) => b.classList.remove('active'));
+          document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
+          btn.classList.add('active');
+          $(`tab-${btn.dataset.linkTab}`).classList.add('active');
+        });
+      });
+
+      linkModeBtn.addEventListener('click', () => {
+        state.linkMode = true;
+        updateLinkUI();
+        linkModal.classList.add('open');
+      });
+      openLinkModalBtn.addEventListener('click', () => linkModal.classList.add('open'));
+      closeLinkModalBtn.addEventListener('click', () => linkModal.classList.remove('open'));
+      exitLinkModeBtn.addEventListener('click', () => {
+        state.linkMode = false;
+        updateLinkUI();
+      });
+
+      mySideWhiteBtn.addEventListener('click', () => {
+        state.mySide = 'white';
+        boardFlipped = false;
+        renderBoard();
+        updateLinkUI();
+      });
+      mySideBlackBtn.addEventListener('click', () => {
+        state.mySide = 'black';
+        boardFlipped = true;
+        renderBoard();
+        updateLinkUI();
+      });
+      focusToggleBtn.addEventListener('click', () => {
+        state.singleFocus = !state.singleFocus;
+        updateLinkUI();
+      });
+
+      // WebRTC Serverless P2P
+      function setupRtcChannel(ch) {
+        rtcChannel = ch;
+        ch.onopen = () => {
+          state.linkType = 'webrtc';
+          state.linkConnected = true;
+          updateLinkUI();
+          sendSyncMessage('hello');
+        };
+        ch.onclose = () => {
+          if (state.linkType === 'webrtc') {
+            state.linkConnected = false;
+            state.linkType = null;
+            updateLinkUI();
+          }
+        };
+        ch.onmessage = (e) => applyRemoteSync(e.data);
+      }
+
+      function waitForIceComplete(pc) {
+        return new Promise((resolve) => {
+          if (pc.iceGatheringState === 'complete') return resolve();
+          const check = () => {
+            if (pc.iceGatheringState === 'complete') {
+              pc.removeEventListener('icegatheringstatechange', check);
+              resolve();
+            }
+          };
+          pc.addEventListener('icegatheringstatechange', check);
+          setTimeout(resolve, 2000);
+        });
+      }
+
+      rtcCreateOfferBtn.addEventListener('click', async () => {
+        try {
+          if (rtcPeer) rtcPeer.close();
+          rtcPeer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+          setupRtcChannel(rtcPeer.createDataChannel('chess-clock'));
+          const offer = await rtcPeer.createOffer();
+          await rtcPeer.setLocalDescription(offer);
+          linkStatusBox.textContent = 'Gathering network candidates...';
+          await waitForIceComplete(rtcPeer);
+          rtcLocalCode.value = btoa(JSON.stringify(rtcPeer.localDescription));
+          linkStatusBox.textContent = 'Invite code ready! Send it to Player 2, then paste their reply.';
+        } catch (err) {
+          linkStatusBox.textContent = `WebRTC error: ${err.message}`;
+        }
+      });
+
+      rtcAcceptOfferBtn.addEventListener('click', async () => {
+        try {
+          const raw = rtcRemoteCode.value.trim();
+          if (!raw) {
+            linkStatusBox.textContent = 'Paste Player 1 invite code first.';
+            return;
+          }
+          if (rtcPeer) rtcPeer.close();
+          rtcPeer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+          rtcPeer.ondatachannel = (e) => setupRtcChannel(e.channel);
+          const offer = JSON.parse(atob(raw));
+          await rtcPeer.setRemoteDescription(offer);
+          const answer = await rtcPeer.createAnswer();
+          await rtcPeer.setLocalDescription(answer);
+          linkStatusBox.textContent = 'Creating reply code...';
+          await waitForIceComplete(rtcPeer);
+          rtcLocalCode.value = btoa(JSON.stringify(rtcPeer.localDescription));
+          linkStatusBox.textContent = 'Reply code ready! Send it back to Player 1.';
+        } catch (err) {
+          linkStatusBox.textContent = `Invalid invite code: ${err.message}`;
+        }
+      });
+
+      rtcAcceptAnswerBtn.addEventListener('click', async () => {
+        try {
+          const raw = rtcRemoteCode.value.trim();
+          if (!rtcPeer || !raw) {
+            linkStatusBox.textContent = 'Create an invite first, then paste Player 2 reply code.';
+            return;
+          }
+          const answer = JSON.parse(atob(raw));
+          await rtcPeer.setRemoteDescription(answer);
+          linkStatusBox.textContent = 'Connecting peer-to-peer...';
+        } catch (err) {
+          linkStatusBox.textContent = `Invalid reply code: ${err.message}`;
+        }
+      });
+
+      // Web Bluetooth (BLE GATT)
+      const BLE_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'; // Nordic UART Service UUID
+      const BLE_TX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+      const BLE_RX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
+      if (navigator.bluetooth) {
+        bleSupportNote.textContent = 'Web Bluetooth API is available in this browser.';
+      } else {
+        bleSupportNote.textContent = 'Web Bluetooth API is not supported in this browser/context (use Chrome/Edge over HTTPS, or use Same Network P2P).';
+      }
+
+      bleScanBtn.addEventListener('click', async () => {
+        if (!navigator.bluetooth) {
+          linkStatusBox.textContent = 'Web Bluetooth is not available here. Try Same Network (P2P) instead.';
+          return;
+        }
+        try {
+          linkStatusBox.textContent = 'Scanning for Bluetooth devices...';
+          bleDevice = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: [BLE_SERVICE_UUID]
+          });
+          bleDevice.addEventListener('gattserverdisconnected', () => {
+            if (state.linkType === 'bluetooth') {
+              state.linkConnected = false;
+              state.linkType = null;
+              updateLinkUI();
+            }
+          });
+          const server = await bleDevice.gatt.connect();
+          const service = await server.getPrimaryService(BLE_SERVICE_UUID);
+          bleCharacteristic = await service.getCharacteristic(BLE_TX_UUID);
+          try {
+            const rxChar = await service.getCharacteristic(BLE_RX_UUID);
+            await rxChar.startNotifications();
+            rxChar.addEventListener('characteristicvaluechanged', (ev) => {
+              const txt = new TextDecoder().decode(ev.target.value);
+              applyRemoteSync(txt);
+            });
+          } catch (e) {}
+          state.linkType = 'bluetooth';
+          state.linkConnected = true;
+          updateLinkUI();
+        } catch (err) {
+          linkStatusBox.textContent = `Bluetooth pairing canceled or failed: ${err.message}`;
+        }
+      });
+
+      bleDisconnectBtn.addEventListener('click', () => {
+        if (bleDevice && bleDevice.gatt && bleDevice.gatt.connected) {
+          bleDevice.gatt.disconnect();
+        }
+        if (state.linkType === 'bluetooth') {
+          state.linkConnected = false;
+          state.linkType = null;
+          updateLinkUI();
+        }
+      });
+
+      // Local BroadcastChannel (Same-Browser Tab Sync)
+      localConnectBtn.addEventListener('click', () => {
+        const room = (localRoomInput.value || 'chess-room-1').trim();
+        if (bcChannel) bcChannel.close();
+        bcChannel = new BroadcastChannel(`pure_chess_${room}`);
+        bcChannel.onmessage = (e) => applyRemoteSync(e.data);
+        state.linkType = 'broadcast';
+        state.linkConnected = true;
+        updateLinkUI();
+        sendSyncMessage('hello');
+      });
+
+      localDisconnectBtn.addEventListener('click', () => {
+        if (bcChannel) bcChannel.close();
+        bcChannel = null;
+        if (state.linkType === 'broadcast') {
+          state.linkConnected = false;
+          state.linkType = null;
+          updateLinkUI();
+        }
+      });
+
+      // === Notation & Scorecard Mode ===
+      const notationModeBtn = $('notationModeBtn');
+      const whiteNameInput = $('whiteNameInput');
+      const blackNameInput = $('blackNameInput');
+      const moveNotationInput = $('moveNotationInput');
+      const recordMoveBtn = $('recordMoveBtn');
+      const undoMoveBtn = $('undoMoveBtn');
+      const resultSelect = $('resultSelect');
+      const saveGameBtn = $('saveGameBtn');
+      const viewSavedGamesBtn = $('viewSavedGamesBtn');
+      const savedCountEl = $('savedCount');
+      const movesGrid = $('movesGrid');
+      const savedGamesModal = $('savedGamesModal');
+      const closeSavedGamesBtn = $('closeSavedGamesBtn');
+      const savedNoticeBox = $('savedNoticeBox');
+      const savedList = $('savedList');
+
+      const STORAGE_GAMES_KEY = 'pure_chess_saved_games_v1';
+
+      function loadSavedGames() {
+        try {
+          const raw = localStorage.getItem(STORAGE_GAMES_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function persistSavedGames(list) {
+        try {
+          localStorage.setItem(STORAGE_GAMES_KEY, JSON.stringify(list));
+        } catch (e) {}
+        savedCountEl.textContent = String(list.length);
+      }
+
+      function renderMoveLog() {
+        if (!state.moveLog.length) {
+          movesGrid.innerHTML = '<span style="color:var(--text-muted); grid-column:1/-1;">No moves recorded yet. Enter a move in algebraic notation (e.g. e4) and press Enter or Record &amp; End Turn.</span>';
+          return;
+        }
+        let htmlPairs = '';
+        for (let i = 0; i < state.moveLog.length; i += 2) {
+          const num = Math.floor(i / 2) + 1;
+          const m1 = state.moveLog[i] ? state.moveLog[i].notation : '';
+          const m2 = state.moveLog[i + 1] ? state.moveLog[i + 1].notation : '';
+          htmlPairs += `<div class="move-pair"><span class="move-num">${num}.</span><span>${escapeHtml(m1)}</span><span style="color:var(--text-muted);">${escapeHtml(m2)}</span></div>`;
+        }
+        movesGrid.innerHTML = htmlPairs;
+        movesGrid.scrollTop = movesGrid.scrollHeight;
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function buildPgnText(game) {
+        const lines = [
+          `[Event "Pure Chess Clock Game"]`,
+          `[Site "Pure Chess Clock"]`,
+          `[Date "${(game.date || new Date().toISOString()).slice(0, 10).replace(/-/g, '.')}"]`,
+          `[Round "-"]`,
+          `[White "${game.white || 'White'}"]`,
+          `[Black "${game.black || 'Black'}"]`,
+          `[Result "${game.result || '*'}"]`,
+          `[TimeControl "${game.timeControl || '180+2'}"]`,
+          ''
+        ];
+        const moves = [];
+        for (let i = 0; i < game.moves.length; i += 2) {
+          const num = Math.floor(i / 2) + 1;
+          const w = game.moves[i]?.notation || '...';
+          const b = game.moves[i + 1]?.notation ? ` ${game.moves[i + 1].notation}` : '';
+          moves.push(`${num}. ${w}${b}`);
+        }
+        moves.push(game.result);
+        lines.push(moves.join(' '));
+        return lines.join('\n');
+      }
+
+      function renderSavedGamesList() {
+        const games = loadSavedGames();
+        savedCountEl.textContent = String(games.length);
+        if (!games.length) {
+          savedList.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding:8px 0;">No saved games yet.</div>';
+          return;
+        }
+        savedList.innerHTML = games.map((g, idx) => `
+          <div class="saved-item">
+            <div>
+              <div style="font-weight:700;">${escapeHtml(g.white)} vs ${escapeHtml(g.black)} <span style="color:var(--accent);">(${escapeHtml(g.result)})</span></div>
+              <div style="color:var(--text-muted); font-size:11.5px;">${escapeHtml(new Date(g.date).toLocaleString())} · ${escapeHtml(g.timeControl)} · ${g.moves.length} plies</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn" data-copy-pgn="${idx}" type="button" style="padding:4px 9px; font-size:11.5px;">Copy PGN</button>
+              <button class="btn" data-dl-pgn="${idx}" type="button" style="padding:4px 9px; font-size:11.5px;">.pgn</button>
+              <button class="btn" data-del-game="${idx}" type="button" style="padding:4px 9px; font-size:11.5px; color:var(--danger);">Delete</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      savedList.addEventListener('click', (e) => {
+        const copyBtn = e.target.closest('[data-copy-pgn]');
+        const dlBtn = e.target.closest('[data-dl-pgn]');
+        const delBtn = e.target.closest('[data-del-game]');
+        const games = loadSavedGames();
+
+        if (copyBtn) {
+          const g = games[Number(copyBtn.dataset.copyPgn)];
+          if (!g) return;
+          const pgn = buildPgnText(g);
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(pgn).catch(() => {});
+          }
+          savedNoticeBox.textContent = `Copied PGN for ${g.white} vs ${g.black}!`;
+        } else if (dlBtn) {
+          const g = games[Number(dlBtn.dataset.dlPgn)];
+          if (!g) return;
+          const pgn = buildPgnText(g);
+          const blob = new Blob([pgn], { type: 'application/x-chess-pgn' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${g.white}-vs-${g.black}.pgn`.replace(/[^a-zA-Z0-9._-]/g, '_');
+          a.click();
+          URL.revokeObjectURL(url);
+        } else if (delBtn) {
+          const idx = Number(delBtn.dataset.delGame);
+          games.splice(idx, 1);
+          persistSavedGames(games);
+          renderSavedGamesList();
+        }
+      });
+
+      function recordTurnMove(explicitNotation) {
+        if (!state.notationMode || state.flagged) return;
+        const activeSide = state.activeTurn
+          ? (state.activeTurn === 'A' ? state.sideA : state.sideB)
+          : 'white';
+        const remMs = state.activeTurn === 'A' ? state.msA : state.msB;
+        const text = (explicitNotation !== undefined ? explicitNotation : moveNotationInput.value).trim();
+        state.moveLog.push({
+          ply: state.moveLog.length + 1,
+          side: activeSide,
+          notation: text || '—',
+          remainingMs: Math.round(remMs)
+        });
+        moveNotationInput.value = '';
+        renderMoveLog();
+      }
+
+      // Wrap switchTurn & resetClock for notation recording
+      const origSwitchForNotation = switchTurn;
+      switchTurn = function (pressedPad) {
+        const willSwitch = !state.flagged && (!pressedPad || !state.activeTurn || (state.running && pressedPad === state.activeTurn));
+        if (state.notationMode && willSwitch && state.activeTurn) {
+          recordTurnMove();
+        }
+        origSwitchForNotation(pressedPad);
+      };
+
+      const origResetForNotation = resetClock;
+      resetClock = function (newInitialMs, newIncMs) {
+        state.moveLog = [];
+        renderMoveLog();
+        origResetForNotation(newInitialMs, newIncMs);
+      };
+
+      notationModeBtn.addEventListener('click', () => {
+        state.notationMode = !state.notationMode;
+        appShell.classList.toggle('notation-mode', state.notationMode);
+        notationModeBtn.classList.toggle('notation-active', state.notationMode);
+        render();
+      });
+
+      whiteNameInput.addEventListener('input', () => {
+        state.whiteName = whiteNameInput.value || 'White';
+        render();
+      });
+      blackNameInput.addEventListener('input', () => {
+        state.blackName = blackNameInput.value || 'Black';
+        render();
+      });
+
+      recordMoveBtn.addEventListener('click', () => {
+        if (!state.activeTurn) {
+          // First move starts White & switches to Black after recording
+          switchTurn(state.sideA === 'white' ? 'A' : 'B');
+        } else {
+          switchTurn(null);
+        }
+        moveNotationInput.focus();
+      });
+
+      moveNotationInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          recordMoveBtn.click();
+        }
+      });
+
+      undoMoveBtn.addEventListener('click', () => {
+        if (state.moveLog.length) {
+          state.moveLog.pop();
+          renderMoveLog();
+        }
+      });
+
+      saveGameBtn.addEventListener('click', () => {
+        const games = loadSavedGames();
+        const min = Math.round(state.initialMs / 60000);
+        const inc = Math.round(state.incrementMs / 1000);
+        const record = {
+          id: Date.now(),
+          date: new Date().toISOString(),
+          white: (whiteNameInput.value || 'White').trim(),
+          black: (blackNameInput.value || 'Black').trim(),
+          timeControl: `${min}+${inc}`,
+          result: resultSelect.value,
+          moves: [...state.moveLog]
+        };
+        games.unshift(record);
+        persistSavedGames(games);
+        renderSavedGamesList();
+        savedNoticeBox.textContent = `Saved "${record.white} vs ${record.black}" (${record.moves.length} plies)!`;
+        savedGamesModal.classList.add('open');
+      });
+
+      viewSavedGamesBtn.addEventListener('click', () => {
+        renderSavedGamesList();
+        savedGamesModal.classList.add('open');
+      });
+
+      closeSavedGamesBtn.addEventListener('click', () => savedGamesModal.classList.remove('open'));
+      savedCountEl.textContent = String(loadSavedGames().length);
+
+      // === Floating Chessboard Flyout (Staunton 3D, Staunton Classic, Flat Chess Book) ===
+      const boardFlyout = $('boardFlyout');
+      const boardFlyoutBtn = $('boardFlyoutBtn');
+      const boardDragHandle = $('boardDragHandle');
+      const pieceStyleSelect = $('pieceStyleSelect');
+      const flipBoardBtn = $('flipBoardBtn');
+      const closeBoardFlyoutBtn = $('closeBoardFlyoutBtn');
+      const chessGrid = $('chessGrid');
+      const boardStatusText = $('boardStatusText');
+      const boardUndoBtn = $('boardUndoBtn');
+
+      const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+      let boardVisible = true;
+      let boardFlipped = false;
+      let selectedSq = null; // { r, c }
+      let legalTargets = [];
+      let lastMoveSquares = null; // { from: 'e2', to: 'e4' }
+
+      function createInitialBoard() {
+        return [
+          ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+          ['bP','bP','bP','bP','bP','bP','bP','bP'],
+          [null,null,null,null,null,null,null,null],
+          [null,null,null,null,null,null,null,null],
+          [null,null,null,null,null,null,null,null],
+          [null,null,null,null,null,null,null,null],
+          ['wP','wP','wP','wP','wP','wP','wP','wP'],
+          ['wR','wN','wB','wQ','wK','wB','wN','wR']
+        ];
+      }
+
+      let chess = {
+        board: createInitialBoard(),
+        turn: 'w', // 'w' | 'b'
+        castling: { wK: true, wQ: true, bK: true, bQ: true },
+        ep: null, // { r, c }
+        history: []
+      };
+
+      function cloneChessState() {
+        return {
+          board: chess.board.map((row) => [...row]),
+          turn: chess.turn,
+          castling: { ...chess.castling },
+          ep: chess.ep ? { ...chess.ep } : null,
+          lastMoveSquares: lastMoveSquares ? { ...lastMoveSquares } : null
+        };
+      }
+
+      function inBounds(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+
+      function findKing(board, color) {
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (board[r][c] === `${color}K`) return { r, c };
+          }
+        }
+        return null;
+      }
+
+      function isSquareAttacked(board, r, c, byColor) {
+        // Pawns
+        const pDir = byColor === 'w' ? 1 : -1;
+        for (const dc of [-1, 1]) {
+          if (inBounds(r + pDir, c + dc) && board[r + pDir][c + dc] === `${byColor}P`) return true;
+        }
+        // Knights
+        for (const [dr, dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
+          if (inBounds(r + dr, c + dc) && board[r + dr][c + dc] === `${byColor}N`) return true;
+        }
+        // King
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if ((dr || dc) && inBounds(r + dr, c + dc) && board[r + dr][c + dc] === `${byColor}K`) return true;
+          }
+        }
+        // Straight (Rook/Queen)
+        for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+          let nr = r + dr, nc = c + dc;
+          while (inBounds(nr, nc)) {
+            const p = board[nr][nc];
+            if (p) {
+              if (p[0] === byColor && (p[1] === 'R' || p[1] === 'Q')) return true;
+              break;
+            }
+            nr += dr; nc += dc;
+          }
+        }
+        // Diagonal (Bishop/Queen)
+        for (const [dr, dc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) {
+          let nr = r + dr, nc = c + dc;
+          while (inBounds(nr, nc)) {
+            const p = board[nr][nc];
+            if (p) {
+              if (p[0] === byColor && (p[1] === 'B' || p[1] === 'Q')) return true;
+              break;
+            }
+            nr += dr; nc += dc;
+          }
+        }
+        return false;
+      }
+
+      function getPseudoMoves(board, r, c, castling, ep) {
+        const piece = board[r][c];
+        if (!piece) return [];
+        const color = piece[0];
+        const type = piece[1];
+        const opp = color === 'w' ? 'b' : 'w';
+        const moves = [];
+
+        if (type === 'P') {
+          const dir = color === 'w' ? -1 : 1;
+          const startRow = color === 'w' ? 6 : 1;
+          if (inBounds(r + dir, c) && !board[r + dir][c]) {
+            moves.push({ r: r + dir, c });
+            if (r === startRow && !board[r + 2 * dir][c]) {
+              moves.push({ r: r + 2 * dir, c, doublePawn: true });
+            }
+          }
+          for (const dc of [-1, 1]) {
+            const nr = r + dir, nc = c + dc;
+            if (!inBounds(nr, nc)) continue;
+            if (board[nr][nc] && board[nr][nc][0] === opp) {
+              moves.push({ r: nr, c: nc, capture: true });
+            } else if (ep && ep.r === nr && ep.c === nc) {
+              moves.push({ r: nr, c: nc, capture: true, enPassant: true });
+            }
+          }
+        } else if (type === 'N') {
+          for (const [dr, dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
+            const nr = r + dr, nc = c + dc;
+            if (inBounds(nr, nc) && (!board[nr][nc] || board[nr][nc][0] === opp)) {
+              moves.push({ r: nr, c: nc, capture: Boolean(board[nr][nc]) });
+            }
+          }
+        } else if (type === 'K') {
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              if (!dr && !dc) continue;
+              const nr = r + dr, nc = c + dc;
+              if (inBounds(nr, nc) && (!board[nr][nc] || board[nr][nc][0] === opp)) {
+                moves.push({ r: nr, c: nc, capture: Boolean(board[nr][nc]) });
+              }
+            }
+          }
+          // Castling
+          const row = color === 'w' ? 7 : 0;
+          if (r === row && c === 4 && !isSquareAttacked(board, row, 4, opp)) {
+            if (castling[`${color}K`] && !board[row][5] && !board[row][6] && board[row][7] === `${color}R` &&
+                !isSquareAttacked(board, row, 5, opp) && !isSquareAttacked(board, row, 6, opp)) {
+              moves.push({ r: row, c: 6, castle: 'K' });
+            }
+            if (castling[`${color}Q`] && !board[row][3] && !board[row][2] && !board[row][1] && board[row][0] === `${color}R` &&
+                !isSquareAttacked(board, row, 3, opp) && !isSquareAttacked(board, row, 2, opp)) {
+              moves.push({ r: row, c: 2, castle: 'Q' });
+            }
+          }
+        } else {
+          const dirs = type === 'R'
+            ? [[-1,0],[1,0],[0,-1],[0,1]]
+            : type === 'B'
+              ? [[-1,-1],[-1,1],[1,-1],[1,1]]
+              : [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
+          for (const [dr, dc] of dirs) {
+            let nr = r + dr, nc = c + dc;
+            while (inBounds(nr, nc)) {
+              const target = board[nr][nc];
+              if (!target) {
+                moves.push({ r: nr, c: nc });
+              } else {
+                if (target[0] === opp) moves.push({ r: nr, c: nc, capture: true });
+                break;
+              }
+              nr += dr; nc += dc;
+            }
+          }
+        }
+        return moves;
+      }
+
+      function applyMoveOnBoard(board, fromR, fromC, m) {
+        const next = board.map((row) => [...row]);
+        const piece = next[fromR][fromC];
+        const color = piece[0];
+        next[fromR][fromC] = null;
+        if (m.enPassant) {
+          next[fromR][m.c] = null;
+        }
+        if (m.castle === 'K') {
+          next[fromR][5] = `${color}R`;
+          next[fromR][7] = null;
+        } else if (m.castle === 'Q') {
+          next[fromR][3] = `${color}R`;
+          next[fromR][0] = null;
+        }
+        // Auto-promote pawn to Queen on last rank
+        if (piece[1] === 'P' && (m.r === 0 || m.r === 7)) {
+          next[m.r][m.c] = `${color}Q`;
+          m.promo = 'Q';
+        } else {
+          next[m.r][m.c] = piece;
+        }
+        return next;
+      }
+
+      function getLegalMoves(r, c) {
+        const piece = chess.board[r][c];
+        if (!piece || piece[0] !== chess.turn) return [];
+        const opp = chess.turn === 'w' ? 'b' : 'w';
+        return getPseudoMoves(chess.board, r, c, chess.castling, chess.ep).filter((m) => {
+          const next = applyMoveOnBoard(chess.board, r, c, { ...m });
+          const k = findKing(next, chess.turn);
+          return k && !isSquareAttacked(next, k.r, k.c, opp);
+        });
+      }
+
+      function hasAnyLegalMove(color) {
+        const savedTurn = chess.turn;
+        chess.turn = color;
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (chess.board[r][c] && chess.board[r][c][0] === color && getLegalMoves(r, c).length > 0) {
+              chess.turn = savedTurn;
+              return true;
+            }
+          }
+        }
+        chess.turn = savedTurn;
+        return false;
+      }
+
+      function toAlgebraic(fromR, fromC, moveObj, nextBoard) {
+        const piece = chess.board[fromR][fromC];
+        const color = piece[0];
+        const type = piece[1];
+        const opp = color === 'w' ? 'b' : 'w';
+
+        let san = '';
+        if (moveObj.castle === 'K') san = 'O-O';
+        else if (moveObj.castle === 'Q') san = 'O-O-O';
+        else {
+          const dest = `${FILES[moveObj.c]}${8 - moveObj.r}`;
+          if (type === 'P') {
+            if (moveObj.capture) san = `${FILES[fromC]}x${dest}`;
+            else san = dest;
+            if (moveObj.promo) san += `=${moveObj.promo}`;
+          } else {
+            // Disambiguation
+            let sameFile = false, sameRank = false, conflict = false;
+            for (let r = 0; r < 8; r++) {
+              for (let c = 0; c < 8; c++) {
+                if ((r !== fromR || c !== fromC) && chess.board[r][c] === piece) {
+                  const others = getLegalMoves(r, c);
+                  if (others.some((o) => o.r === moveObj.r && o.c === moveObj.c)) {
+                    conflict = true;
+                    if (c === fromC) sameFile = true;
+                    if (r === fromR) sameRank = true;
+                  }
+                }
+              }
+            }
+            let disambig = '';
+            if (conflict) {
+              if (!sameFile) disambig = FILES[fromC];
+              else if (!sameRank) disambig = String(8 - fromR);
+              else disambig = `${FILES[fromC]}${8 - fromR}`;
+            }
+            san = `${type}${disambig}${moveObj.capture ? 'x' : ''}${dest}`;
+          }
+        }
+
+        const oppKing = findKing(nextBoard, opp);
+        if (oppKing && isSquareAttacked(nextBoard, oppKing.r, oppKing.c, color)) {
+          const prevBoard = chess.board;
+          chess.board = nextBoard;
+          const oppHasMove = hasAnyLegalMove(opp);
+          chess.board = prevBoard;
+          san += oppHasMove ? '+' : '#';
+        }
+        return san;
+      }
+
+      function executeBoardMove(fromR, fromC, moveObj) {
+        const snap = cloneChessState();
+        const piece = chess.board[fromR][fromC];
+        const color = piece[0];
+        const nextBoard = applyMoveOnBoard(chess.board, fromR, fromC, moveObj);
+        const san = toAlgebraic(fromR, fromC, moveObj, nextBoard);
+
+        chess.history.push(snap);
+        chess.board = nextBoard;
+
+        // Update castling rights
+        if (piece === 'wK') { chess.castling.wK = false; chess.castling.wQ = false; }
+        if (piece === 'bK') { chess.castling.bK = false; chess.castling.bQ = false; }
+        if (fromR === 7 && fromC === 0) chess.castling.wQ = false;
+        if (fromR === 7 && fromC === 7) chess.castling.wK = false;
+        if (fromR === 0 && fromC === 0) chess.castling.bQ = false;
+        if (fromR === 0 && fromC === 7) chess.castling.bK = false;
+
+        chess.ep = moveObj.doublePawn ? { r: (fromR + moveObj.r) / 2, c: fromC } : null;
+        chess.turn = color === 'w' ? 'b' : 'w';
+        lastMoveSquares = { from: `${fromR},${fromC}`, to: `${moveObj.r},${moveObj.c}` };
+        selectedSq = null;
+        legalTargets = [];
+
+        // Record notation & switch clock turn
+        if (!state.notationMode) {
+          state.notationMode = true;
+          appShell.classList.add('notation-mode');
+          notationModeBtn.classList.add('notation-active');
+        }
+        state.moveLog.push({
+          ply: state.moveLog.length + 1,
+          side: color === 'w' ? 'white' : 'black',
+          notation: san,
+          remainingMs: Math.round(color === 'w' ? state.msA : state.msB)
+        });
+        renderMoveLog();
+
+        // Switch clock turn (unless Board-Only Untimed mode is active)
+        if (!boardOnlyMode || boUseClock) {
+          origSwitchForNotation(null);
+          sendSyncMessage('switch');
+          if (typeof gistAutoSyncChk !== 'undefined' && gistAutoSyncChk.checked && gistIdInput.value.trim() && (cloudProviderSelect.value !== 'gist' || gistTokenInput.value.trim())) {
+            pushToGist();
+          }
+        }
+
+        boardStatusText.textContent = `${chess.turn === 'w' ? 'White' : 'Black'} to move · Last: ${san}`;
+        renderBoard();
+      }
+
+      // Piece SVG Renderer (Staunton 3D, Staunton Classic, Flat Chess Book)
+      function getPieceSvg(piece, style) {
+        const isWhite = piece[0] === 'w';
+        const type = piece[1];
+        const is3d = style === 'staunton-3d';
+
+        const wCol = (getComputedStyle(document.documentElement).getPropertyValue('--piece-white') || '#fff7e6').trim();
+        const bCol = (getComputedStyle(document.documentElement).getPropertyValue('--piece-black') || '#282c36').trim();
+        const fill = is3d
+          ? (isWhite ? 'url(#wGrad3d)' : 'url(#bGrad3d)')
+          : (isWhite ? wCol : bCol);
+        const baseFill = is3d
+          ? (isWhite ? 'url(#wBase3d)' : 'url(#bBase3d)')
+          : fill;
+        const stroke = style === 'flat-book'
+          ? '#111827'
+          : (isWhite ? '#3b2b1d' : '#090b10');
+        const detailStroke = isWhite ? stroke : (style === 'flat-book' ? '#ffffff' : '#cbd5e1');
+
+        const defs = is3d
+          ? `<defs>
+              <linearGradient id="wGrad3d" x1="0.15" y1="0" x2="0.85" y2="1">
+                <stop offset="0%" stop-color="#ffffff"/><stop offset="50%" stop-color="${wCol}"/><stop offset="100%" stop-color="#b89b72"/>
+              </linearGradient>
+              <linearGradient id="bGrad3d" x1="0.15" y1="0" x2="0.85" y2="1">
+                <stop offset="0%" stop-color="#646b7a"/><stop offset="45%" stop-color="${bCol}"/><stop offset="100%" stop-color="#0d0f14"/>
+              </linearGradient>
+              <linearGradient id="wBase3d" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#cfb48b"/><stop offset="45%" stop-color="#fff7e6"/><stop offset="100%" stop-color="#aa8a5e"/>
+              </linearGradient>
+              <linearGradient id="bBase3d" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#151820"/><stop offset="45%" stop-color="#4e5566"/><stop offset="100%" stop-color="#0b0d12"/>
+              </linearGradient>
+            </defs>`
+          : '';
+
+        const shadowEllipse = is3d
+          ? `<ellipse cx="22.5" cy="40.5" rx="13" ry="3.2" fill="rgba(0,0,0,0.34)"/>`
+          : '';
+
+        let shape = '';
+        if (type === 'P') {
+          shape = `<circle cx="22.5" cy="13.5" r="5.6" fill="${fill}" stroke="${stroke}" stroke-width="1.8"/>
+                   <ellipse cx="22.5" cy="20" rx="5.5" ry="1.6" fill="${baseFill}" stroke="${stroke}" stroke-width="1.5"/>
+                   <path d="M18.5 21 C18 26 16 30 13.5 34.5 H31.5 C29 30 27 26 26.5 21 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.8" stroke-linejoin="round"/>
+                   <rect x="11.5" y="34.5" width="22" height="4.5" rx="2.2" fill="${baseFill}" stroke="${stroke}" stroke-width="1.8"/>`;
+        } else if (type === 'R') {
+          shape = `<path d="M12.5 9.5 H16.5 V13 H20 V9.5 H25 V13 H28.5 V9.5 H32.5 V17.5 L28.5 20.5 V32.5 L32.5 35 H12.5 L16.5 32.5 V20.5 L12.5 17.5 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.8" stroke-linejoin="round"/>
+                   <line x1="16.5" y1="20.5" x2="28.5" y2="20.5" stroke="${detailStroke}" stroke-width="1.4"/>
+                   <rect x="11" y="35" width="23" height="4.5" rx="2" fill="${baseFill}" stroke="${stroke}" stroke-width="1.8"/>`;
+        } else if (type === 'N') {
+          shape = `<path d="M14.5 35 L16.5 26 C14 23.5 12.5 20.5 14 16 L18 10.5 L20.5 7.5 L23.5 11.5 C29.5 12.5 33 17.5 33 24.5 C33 29 31 32.5 31.5 35 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.8" stroke-linejoin="round"/>
+                   <circle cx="19.5" cy="15.5" r="1.4" fill="${detailStroke}"/>
+                   <rect x="11.5" y="35" width="22" height="4.5" rx="2" fill="${baseFill}" stroke="${stroke}" stroke-width="1.8"/>`;
+        } else if (type === 'B') {
+          shape = `<circle cx="22.5" cy="8" r="2.4" fill="${fill}" stroke="${stroke}" stroke-width="1.7"/>
+                   <path d="M22.5 10.5 C16.5 14.5 14.5 22 17.5 28.5 L14 34.5 H31 L27.5 28.5 C30.5 22 28.5 14.5 22.5 10.5 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.8" stroke-linejoin="round"/>
+                   <path d="M19.5 19.5 L25.5 25.5 M22.5 17.5 V24.5" stroke="${detailStroke}" stroke-width="1.5" stroke-linecap="round"/>
+                   <rect x="11.5" y="34.5" width="22" height="4.5" rx="2" fill="${baseFill}" stroke="${stroke}" stroke-width="1.8"/>`;
+        } else if (type === 'Q') {
+          shape = `<circle cx="10" cy="13.5" r="2" fill="${fill}" stroke="${stroke}" stroke-width="1.4"/>
+                   <circle cx="16" cy="9.5" r="2" fill="${fill}" stroke="${stroke}" stroke-width="1.4"/>
+                   <circle cx="22.5" cy="8" r="2.2" fill="${fill}" stroke="${stroke}" stroke-width="1.4"/>
+                   <circle cx="29" cy="9.5" r="2" fill="${fill}" stroke="${stroke}" stroke-width="1.4"/>
+                   <circle cx="35" cy="13.5" r="2" fill="${fill}" stroke="${stroke}" stroke-width="1.4"/>
+                   <path d="M11 15.5 L15 28 L17 12.5 L22.5 27 L28 12.5 L30 28 L34 15.5 L31 34.5 H14 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.8" stroke-linejoin="round"/>
+                   <rect x="11" y="34.5" width="23" height="4.5" rx="2" fill="${baseFill}" stroke="${stroke}" stroke-width="1.8"/>`;
+        } else if (type === 'K') {
+          shape = `<path d="M22.5 5.5 V12.5 M19 9 H26" stroke="${stroke}" stroke-width="2.3" stroke-linecap="round"/>
+                   <path d="M22.5 13.5 C15 13.5 10.5 18.5 12.5 25.5 L15 34.5 H30 L32.5 25.5 C34.5 18.5 30 13.5 22.5 13.5 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.8" stroke-linejoin="round"/>
+                   <line x1="15" y1="30.5" x2="30" y2="30.5" stroke="${detailStroke}" stroke-width="1.4"/>
+                   <rect x="11" y="34.5" width="23" height="4.5" rx="2" fill="${baseFill}" stroke="${stroke}" stroke-width="1.8"/>`;
+        }
+
+        return `<svg class="piece-svg" viewBox="0 0 45 45" aria-hidden="true">${defs}${shadowEllipse}${shape}</svg>`;
+      }
+
+      function renderBoard() {
+        const style = pieceStyleSelect.value;
+        boardFlyout.setAttribute('data-piece-style', style);
+        let htmlSquares = '';
+
+        for (let vr = 0; vr < 8; vr++) {
+          for (let vc = 0; vc < 8; vc++) {
+            const r = boardFlipped ? 7 - vr : vr;
+            const c = boardFlipped ? 7 - vc : vc;
+            const isLight = (r + c) % 2 === 0;
+            const piece = chess.board[r][c];
+            const isSel = selectedSq && selectedSq.r === r && selectedSq.c === c;
+            const isLegal = legalTargets.some((m) => m.r === r && m.c === c);
+            const isLast = lastMoveSquares && (lastMoveSquares.from === `${r},${c}` || lastMoveSquares.to === `${r},${c}`);
+
+            const classes = [
+              'sq',
+              isLight ? 'light' : 'dark',
+              isSel ? 'selected' : '',
+              isLegal ? 'legal' : '',
+              piece ? 'has-piece' : '',
+              isLast ? 'last-move' : ''
+            ].filter(Boolean).join(' ');
+
+            const rankLabel = vc === 0 ? `<span class="sq-coord rank">${8 - r}</span>` : '';
+            const fileLabel = vr === 7 ? `<span class="sq-coord file">${FILES[c]}</span>` : '';
+            const pieceHtml = piece ? getPieceSvg(piece, style) : '';
+
+            htmlSquares += `<div class="${classes}" data-r="${r}" data-c="${c}">${rankLabel}${fileLabel}${pieceHtml}</div>`;
+          }
+        }
+        chessGrid.innerHTML = htmlSquares;
+      }
+
+      chessGrid.addEventListener('click', (e) => {
+        const sqEl = e.target.closest('.sq');
+        if (!sqEl) return;
+        const r = Number(sqEl.dataset.r);
+        const c = Number(sqEl.dataset.c);
+
+        if (selectedSq) {
+          const found = legalTargets.find((m) => m.r === r && m.c === c);
+          if (found) {
+            executeBoardMove(selectedSq.r, selectedSq.c, found);
+            return;
+          }
+        }
+
+        if (state.linkMode && state.linkConnected) {
+          const myColorChar = state.mySide === 'white' ? 'w' : 'b';
+          if (chess.turn !== myColorChar) return;
+        }
+        const clickedPiece = chess.board[r][c];
+        if (clickedPiece && clickedPiece[0] === chess.turn) {
+          selectedSq = { r, c };
+          legalTargets = getLegalMoves(r, c);
+        } else {
+          selectedSq = null;
+          legalTargets = [];
+        }
+        renderBoard();
+      });
+
+      function undoBoardMove() {
+        if (!chess.history.length) return;
+        const prev = chess.history.pop();
+        chess.board = prev.board;
+        chess.turn = prev.turn;
+        chess.castling = prev.castling;
+        chess.ep = prev.ep;
+        lastMoveSquares = prev.lastMoveSquares;
+        selectedSq = null;
+        legalTargets = [];
+        if (state.moveLog.length) {
+          state.moveLog.pop();
+          renderMoveLog();
+        }
+        boardStatusText.textContent = `${chess.turn === 'w' ? 'White' : 'Black'} to move`;
+        renderBoard();
+      }
+
+      boardUndoBtn.addEventListener('click', undoBoardMove);
+      undoMoveBtn.addEventListener('click', undoBoardMove);
+
+      // Reset board whenever clock resets
+      const origResetForBoard = resetClock;
+      resetClock = function (newInitialMs, newIncMs) {
+        chess = {
+          board: createInitialBoard(),
+          turn: 'w',
+          castling: { wK: true, wQ: true, bK: true, bQ: true },
+          ep: null,
+          history: []
+        };
+        selectedSq = null;
+        legalTargets = [];
+        lastMoveSquares = null;
+        boardStatusText.textContent = 'White to move · Make move on board';
+        renderBoard();
+        origResetForBoard(newInitialMs, newIncMs);
+      };
+
+      function toggleBoardFlyout(show) {
+        boardVisible = typeof show === 'boolean' ? show : !boardVisible;
+        boardFlyout.classList.toggle('hidden', !boardVisible);
+        boardFlyoutBtn.classList.toggle('board-active', boardVisible);
+      }
+
+      boardFlyoutBtn.addEventListener('click', () => toggleBoardFlyout());
+      closeBoardFlyoutBtn.addEventListener('click', () => toggleBoardFlyout(false));
+      pieceStyleSelect.addEventListener('change', renderBoard);
+      flipBoardBtn.addEventListener('click', () => {
+        boardFlipped = !boardFlipped;
+        renderBoard();
+      });
+
+      // Draggable Board Flyout
+      let boardDragging = false;
+      let bDragX = 0, bDragY = 0;
+      boardDragHandle.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('button') || e.target.closest('select')) return;
+        boardDragging = true;
+        const rect = boardFlyout.getBoundingClientRect();
+        boardFlyout.style.transform = 'none';
+        boardFlyout.style.bottom = 'auto';
+        boardFlyout.style.left = `${rect.left}px`;
+        boardFlyout.style.top = `${rect.top}px`;
+        bDragX = e.clientX - rect.left;
+        bDragY = e.clientY - rect.top;
+        boardDragHandle.setPointerCapture(e.pointerId);
+      });
+      boardDragHandle.addEventListener('pointermove', (e) => {
+        if (!boardDragging) return;
+        const x = Math.max(8, Math.min(window.innerWidth - boardFlyout.offsetWidth - 8, e.clientX - bDragX));
+        const y = Math.max(8, Math.min(window.innerHeight - boardFlyout.offsetHeight - 8, e.clientY - bDragY));
+        boardFlyout.style.left = `${x}px`;
+        boardFlyout.style.top = `${y}px`;
+      });
+      boardDragHandle.addEventListener('pointerup', () => { boardDragging = false; });
+
+      renderBoard();
+
+      // === Symbols-Only Button View & Settings Defaults Panel ===
+      const symbolsModeBtn = $('symbolsModeBtn');
+      const settingsBtn = $('settingsBtn');
+      const settingsModal = $('settingsModal');
+      const closeSettingsBtn = $('closeSettingsBtn');
+      const saveDefaultsBtn = $('saveDefaultsBtn');
+      const resetDefaultsBtn = $('resetDefaultsBtn');
+      const DEFAULTS_KEY = 'pure_chess_defaults_v1';
+
+      let symbolsOnly = false;
+      function setSymbolsOnly(enabled) {
+        symbolsOnly = Boolean(enabled);
+        document.body.classList.toggle('symbols-only', symbolsOnly);
+        symbolsModeBtn.classList.toggle('board-active', symbolsOnly);
+      }
+
+      symbolsModeBtn.addEventListener('click', () => setSymbolsOnly(!symbolsOnly));
+
+      function populateSettingsForm(cfg) {
+        $('defTheme').value = cfg.theme;
+        $('defClockStyle').value = cfg.clockStyle;
+        $('defPreset').value = cfg.preset;
+        $('defPieceStyle').value = cfg.pieceStyle;
+        $('chkSpaceToggle').checked = cfg.spaceMode === 'toggle';
+        $('chkBoardOn').checked = cfg.boardOn === 'on';
+        $('chkNotationOn').checked = cfg.notationOn === 'on';
+        $('chkSymbolsOnly').checked = cfg.buttonView === 'symbols';
+        $('chkSoundOn').checked = cfg.soundOn === 'on';
+        $('chkDropShadow').checked = cfg.dropShadow !== 'off';
+        $('colLightSq').value = cfg.colLightSq || '#eed9b7';
+        $('colDarkSq').value = cfg.colDarkSq || '#a87951';
+        $('colBoardBorder').value = cfg.colBoardBorder || '#593e28';
+        $('colWhitePiece').value = cfg.colWhitePiece || '#fff7e6';
+        $('colBlackPiece').value = cfg.colBlackPiece || '#282c36';
+      }
+
+      function readSettingsForm() {
+        return {
+          theme: $('defTheme').value,
+          clockStyle: $('defClockStyle').value,
+          preset: $('defPreset').value,
+          spaceMode: $('chkSpaceToggle').checked ? 'toggle' : 'switch',
+          pieceStyle: $('defPieceStyle').value,
+          buttonView: $('chkSymbolsOnly').checked ? 'symbols' : 'words',
+          boardOn: $('chkBoardOn').checked ? 'on' : 'off',
+          notationOn: $('chkNotationOn').checked ? 'on' : 'off',
+          soundOn: $('chkSoundOn').checked ? 'on' : 'off',
+          dropShadow: $('chkDropShadow').checked ? 'on' : 'off',
+          colLightSq: $('colLightSq').value,
+          colDarkSq: $('colDarkSq').value,
+          colBoardBorder: $('colBoardBorder').value,
+          colWhitePiece: $('colWhitePiece').value,
+          colBlackPiece: $('colBlackPiece').value
+        };
+      }
+
+      function applySettingsConfig(cfg) {
+        applyTheme(cfg.theme);
+        document.querySelectorAll('.seg-btn[data-style]').forEach((b) => {
+          b.classList.toggle('active', b.dataset.style === cfg.clockStyle);
+        });
+        state.clockStyle = cfg.clockStyle;
+        appShell.setAttribute('data-clock-style', cfg.clockStyle);
+
+        if (cfg.preset && cfg.preset.includes(',')) {
+          presetSelect.value = cfg.preset;
+          const [sec, inc] = cfg.preset.split(',').map(Number);
+          resetClock(sec * 1000, inc * 1000);
+        }
+
+        state.spaceMode = cfg.spaceMode;
+        ($('spaceModeLabel') || spaceModeBtn).textContent = state.spaceMode === 'toggle' ? 'Space: On/Off' : 'Space: Switch';
+        spaceHintLabel.textContent = state.spaceMode === 'toggle' ? 'Turn clock On / Off' : 'Switch Turn';
+
+        pieceStyleSelect.value = cfg.pieceStyle;
+        setSymbolsOnly(cfg.buttonView === 'symbols');
+        toggleBoardFlyout(cfg.boardOn === 'on');
+
+        state.notationMode = cfg.notationOn === 'on';
+        appShell.classList.toggle('notation-mode', state.notationMode);
+        notationModeBtn.classList.toggle('notation-active', state.notationMode);
+
+        state.soundOn = cfg.soundOn === 'on';
+        ($('soundLabel') || soundBtn).textContent = `Sound: ${state.soundOn ? 'On' : 'Off'}`;
+
+        document.body.classList.toggle('no-shadows', cfg.dropShadow === 'off');
+        const root = document.documentElement.style;
+        root.setProperty('--sq-light', cfg.colLightSq || '#eed9b7');
+        root.setProperty('--sq-dark', cfg.colDarkSq || '#a87951');
+        root.setProperty('--board-border', cfg.colBoardBorder || '#593e28');
+        root.setProperty('--piece-white', cfg.colWhitePiece || '#fff7e6');
+        root.setProperty('--piece-black', cfg.colBlackPiece || '#282c36');
+
+        renderBoard();
+        render();
+      }
+
+      const FACTORY_DEFAULTS = {
+        theme: 'dark',
+        clockStyle: 'digital',
+        preset: '180,2',
+        spaceMode: 'toggle',
+        pieceStyle: 'staunton-3d',
+        buttonView: 'words',
+        boardOn: 'on',
+        notationOn: 'off',
+        soundOn: 'on',
+        dropShadow: 'on',
+        colLightSq: '#eed9b7',
+        colDarkSq: '#a87951',
+        colBoardBorder: '#593e28',
+        colWhitePiece: '#fff7e6',
+        colBlackPiece: '#282c36'
+      };
+
+      settingsBtn.addEventListener('click', () => {
+        let cfg = { ...FACTORY_DEFAULTS };
+        try {
+          const saved = localStorage.getItem(DEFAULTS_KEY);
+          if (saved) cfg = { ...cfg, ...JSON.parse(saved) };
+        } catch (e) {}
+        populateSettingsForm(cfg);
+        settingsModal.classList.add('open');
+      });
+
+      closeSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('open'));
+
+      // Live tick-and-save inside Settings Drawer
+      settingsModal.querySelector('.settings-drawer').addEventListener('change', (e) => {
+        if (e.target.matches('input, select')) {
+          const cfg = readSettingsForm();
+          try { localStorage.setItem(DEFAULTS_KEY, JSON.stringify(cfg)); } catch (err) {}
+          applySettingsConfig(cfg);
+        }
+      });
+
+      saveDefaultsBtn.addEventListener('click', () => {
+        const cfg = readSettingsForm();
+        try { localStorage.setItem(DEFAULTS_KEY, JSON.stringify(cfg)); } catch (e) {}
+        applySettingsConfig(cfg);
+        settingsModal.classList.remove('open');
+      });
+
+      resetDefaultsBtn.addEventListener('click', () => {
+        try { localStorage.removeItem(DEFAULTS_KEY); } catch (e) {}
+        populateSettingsForm(FACTORY_DEFAULTS);
+        applySettingsConfig(FACTORY_DEFAULTS);
+      });
+
+      // === Zen Mode ===
+      const zenModeBtn = $('zenModeBtn');
+      const exitZenBtn = $('exitZenBtn');
+      let zenMode = false;
+      function setZenMode(enabled) {
+        zenMode = Boolean(enabled);
+        document.body.classList.toggle('zen-mode', zenMode);
+        zenModeBtn.classList.toggle('board-active', zenMode);
+      }
+      zenModeBtn.addEventListener('click', () => setZenMode(!zenMode));
+      exitZenBtn.addEventListener('click', () => setZenMode(false));
+      window.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) return;
+        if (e.key === 'z' || e.key === 'Z') setZenMode(!zenMode);
+      });
+
+      // === Help Modal ===
+      const helpBtn = $('helpBtn');
+      const helpModal = $('helpModal');
+      const closeHelpBtn = $('closeHelpBtn');
+      helpBtn.addEventListener('click', () => helpModal.classList.add('open'));
+      closeHelpBtn.addEventListener('click', () => helpModal.classList.remove('open'));
+
+      // === Player Profiles, Square Avatars & Lightbox ===
+      const avatarBtnA = $('avatarBtnA');
+      const avatarBtnB = $('avatarBtnB');
+      const editProfilesBtn = $('editProfilesBtn');
+      const profileModal = $('profileModal');
+      const closeProfileModalBtn = $('closeProfileModalBtn');
+      const saveProfilesBtn = $('saveProfilesBtn');
+      const avatarLightbox = $('avatarLightbox');
+      const closeLightboxBtn = $('closeLightboxBtn');
+
+      const PROFILES_KEY = 'pure_chess_profiles_v1';
+      let profiles = {
+        white: { name: state.whiteName || 'White', email: '', github: '', photo: '' },
+        black: { name: state.blackName || 'Black', email: '', github: '', photo: '' }
+      };
+
+      try {
+        const sp = localStorage.getItem(PROFILES_KEY);
+        if (sp) profiles = { ...profiles, ...JSON.parse(sp) };
+      } catch (e) {}
+
+      function renderAvatars() {
+        const pA = state.sideA === 'white' ? profiles.white : profiles.black;
+        const pB = state.sideB === 'white' ? profiles.white : profiles.black;
+        avatarBtnA.innerHTML = pA.photo ? `<img src="${pA.photo}" alt="${escapeHtml(pA.name)}"/>` : escapeHtml((pA.name || 'W')[0].toUpperCase());
+        avatarBtnB.innerHTML = pB.photo ? `<img src="${pB.photo}" alt="${escapeHtml(pB.name)}"/>` : escapeHtml((pB.name || 'B')[0].toUpperCase());
+      }
+
+      function openLightbox(sideKey) {
+        const p = sideKey === 'white' ? profiles.white : profiles.black;
+        const img = $('lightboxImg');
+        if (p.photo) { img.src = p.photo; img.style.display = 'block'; } else { img.style.display = 'none'; }
+        $('lightboxName').textContent = p.name || (sideKey === 'white' ? 'White' : 'Black');
+        const metaParts = [p.email, p.github ? `GitHub: ${p.github}` : ''].filter(Boolean);
+        $('lightboxMeta').textContent = metaParts.join(' · ') || 'No additional profile details set';
+        avatarLightbox.classList.add('open');
+      }
+
+      avatarBtnA.addEventListener('click', () => openLightbox(state.sideA));
+      avatarBtnB.addEventListener('click', () => openLightbox(state.sideB));
+      closeLightboxBtn.addEventListener('click', () => avatarLightbox.classList.remove('open'));
+
+      editProfilesBtn.addEventListener('click', () => {
+        $('profWName').value = profiles.white.name || '';
+        $('profBName').value = profiles.black.name || '';
+        $('profWEmail').value = profiles.white.email || '';
+        $('profBEmail').value = profiles.black.email || '';
+        $('profWGithub').value = profiles.white.github || '';
+        $('profBGithub').value = profiles.black.github || '';
+        profileModal.classList.add('open');
+      });
+      closeProfileModalBtn.addEventListener('click', () => profileModal.classList.remove('open'));
+
+      function resizeImageToDataUrl(file) {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+              const c = document.createElement('canvas');
+              c.width = 240; c.height = 240;
+              const ctx = c.getContext('2d');
+              ctx.drawImage(img, 0, 0, 240, 240);
+              resolve(c.toDataURL('image/jpeg', 0.8));
+            };
+            img.src = reader.result;
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      saveProfilesBtn.addEventListener('click', async () => {
+        profiles.white.name = $('profWName').value.trim() || 'White';
+        profiles.black.name = $('profBName').value.trim() || 'Black';
+        profiles.white.email = $('profWEmail').value.trim();
+        profiles.black.email = $('profBEmail').value.trim();
+        profiles.white.github = $('profWGithub').value.trim();
+        profiles.black.github = $('profBGithub').value.trim();
+
+        const wf = $('profWPhoto').files && $('profWPhoto').files[0];
+        const bf = $('profBPhoto').files && $('profBPhoto').files[0];
+        if (wf) profiles.white.photo = await resizeImageToDataUrl(wf);
+        if (bf) profiles.black.photo = await resizeImageToDataUrl(bf);
+
+        state.whiteName = profiles.white.name;
+        state.blackName = profiles.black.name;
+        whiteNameInput.value = state.whiteName;
+        blackNameInput.value = state.blackName;
+        try { localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles)); } catch (e) {}
+        renderAvatars();
+        render();
+        sendSyncMessage('profiles');
+        profileModal.classList.remove('open');
+      });
+
+      // === Epic / Correspondence Cloud Sync (Zero-Auth JSONBlob, Custom URL, or GitHub Gist) ===
+      const cloudProviderSelect = $('cloudProviderSelect');
+      const cloudIdLabel = $('cloudIdLabel');
+      const gistTokenField = $('gistTokenField');
+      const cloudCreateBtn = $('cloudCreateBtn');
+      const gistIdInput = $('gistIdInput');
+      const gistTokenInput = $('gistTokenInput');
+      const gistAutoSyncChk = $('gistAutoSyncChk');
+      const gistPullBtn = $('gistPullBtn');
+      const gistPushBtn = $('gistPushBtn');
+      const GIST_CFG_KEY = 'pure_chess_gist_v1';
+
+      function updateCloudProviderUI() {
+        const p = cloudProviderSelect.value;
+        gistTokenField.style.display = p === 'gist' ? 'flex' : 'none';
+        cloudCreateBtn.style.display = p === 'jsonblob' ? 'inline-flex' : 'none';
+        cloudIdLabel.textContent = p === 'jsonblob' ? 'Shared JSONBlob ID (no login needed)' : p === 'custom' ? 'Custom JSON/Text Endpoint URL' : 'GitHub Gist ID';
+      }
+
+      cloudProviderSelect.addEventListener('change', () => {
+        updateCloudProviderUI();
+        saveGistCfg();
+      });
+
+      try {
+        const gc = JSON.parse(localStorage.getItem(GIST_CFG_KEY) || '{}');
+        if (gc.provider) cloudProviderSelect.value = gc.provider;
+        if (gc.id) gistIdInput.value = gc.id;
+        if (gc.token) gistTokenInput.value = gc.token;
+        if (gc.auto) gistAutoSyncChk.checked = true;
+      } catch (e) {}
+      updateCloudProviderUI();
+
+      function saveGistCfg() {
+        try {
+          localStorage.setItem(GIST_CFG_KEY, JSON.stringify({
+            provider: cloudProviderSelect.value,
+            id: gistIdInput.value.trim(),
+            token: gistTokenInput.value.trim(),
+            auto: gistAutoSyncChk.checked
+          }));
+        } catch (e) {}
+      }
+
+      function buildCloudPayloadObj() {
+        return {
+          msA: Math.round(state.msA), msB: Math.round(state.msB),
+          movesA: state.movesA, movesB: state.movesB,
+          activeTurn: state.activeTurn, running: false,
+          flagged: state.flagged, initialMs: state.initialMs, incrementMs: state.incrementMs,
+          moveLog: state.moveLog,
+          boardState: { board: chess.board, turn: chess.turn, castling: chess.castling, ep: chess.ep, lastMoveSquares },
+          profiles,
+          updatedAt: new Date().toISOString()
+        };
+      }
+
+      cloudCreateBtn.addEventListener('click', async () => {
+        try {
+          linkStatusBox.textContent = 'Creating zero-auth shared game bin...';
+          const res = await fetch('https://jsonblob.com/api/jsonBlob', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(buildCloudPayloadObj())
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const loc = res.headers.get('Location') || res.headers.get('X-jsonblob') || '';
+          const id = loc.split('/').pop();
+          if (!id) throw new Error('Created bin, but could not read ID from headers');
+          gistIdInput.value = id;
+          saveGistCfg();
+          linkStatusBox.textContent = `Game ID created: ${id} — share this ID with your opponent!`;
+        } catch (err) {
+          linkStatusBox.textContent = `Could not create JSONBlob (${err.message}). You can paste a Custom URL or Gist ID instead.`;
+        }
+      });
+
+      async function pullFromGist() {
+        const id = gistIdInput.value.trim();
+        const provider = cloudProviderSelect.value;
+        if (!id) { linkStatusBox.textContent = 'Enter a shared Game ID or URL first.'; return; }
+        saveGistCfg();
+        try {
+          linkStatusBox.textContent = 'Pulling latest move...';
+          if (provider === 'jsonblob') {
+            const url = id.startsWith('http') ? id : `https://jsonblob.com/api/jsonBlob/${encodeURIComponent(id)}`;
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            applyRemoteSync(await res.json());
+          } else if (provider === 'custom') {
+            const res = await fetch(id);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            applyRemoteSync(await res.text());
+          } else {
+            const res = await fetch(`https://api.github.com/gists/${encodeURIComponent(id)}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            const fileObj = data.files && (data.files['chess-clock-state.json'] || Object.values(data.files)[0]);
+            if (!fileObj || !fileObj.content) throw new Error('No state file found in Gist');
+            applyRemoteSync(fileObj.content);
+          }
+          linkStatusBox.textContent = 'Pulled latest move from cloud storage!';
+        } catch (err) {
+          linkStatusBox.textContent = `Cloud pull failed: ${err.message}`;
+        }
+      }
+
+      async function pushToGist() {
+        const id = gistIdInput.value.trim();
+        const provider = cloudProviderSelect.value;
+        const token = gistTokenInput.value.trim();
+        if (!id) { linkStatusBox.textContent = 'Enter a shared Game ID or URL first.'; return; }
+        if (provider === 'gist' && !token) { linkStatusBox.textContent = 'GitHub Token required to push to a Gist.'; return; }
+        saveGistCfg();
+        try {
+          linkStatusBox.textContent = 'Pushing move to cloud storage...';
+          const content = JSON.stringify(buildCloudPayloadObj(), null, 2);
+          if (provider === 'jsonblob') {
+            const url = id.startsWith('http') ? id : `https://jsonblob.com/api/jsonBlob/${encodeURIComponent(id)}`;
+            const res = await fetch(url, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: content
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          } else if (provider === 'custom') {
+            const res = await fetch(id, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: content
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          } else {
+            const res = await fetch(`https://api.github.com/gists/${encodeURIComponent(id)}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ files: { 'chess-clock-state.json': { content } } })
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          }
+          linkStatusBox.textContent = 'Pushed move to cloud storage!';
+        } catch (err) {
+          linkStatusBox.textContent = `Cloud push failed: ${err.message}`;
+        }
+      }
+
+      gistPullBtn.addEventListener('click', pullFromGist);
+      gistPushBtn.addEventListener('click', pushToGist);
+
+      // Load saved defaults on boot if present
+      try {
+        const savedCfg = localStorage.getItem(DEFAULTS_KEY);
+        if (savedCfg) {
+          applySettingsConfig({ ...FACTORY_DEFAULTS, ...JSON.parse(savedCfg) });
+        }
+      } catch (e) {}
+
+      renderAvatars();
+      if (gistAutoSyncChk.checked && gistIdInput.value.trim()) {
+        pullFromGist();
+      }
+
+      // Init      // Init
+      try {
+        const savedTheme = localStorage.getItem('pure_chess_theme');
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+          applyTheme(savedTheme);
+        } else {
+          applyTheme('dark');
+        }
+      } catch (e) {
+        applyTheme('dark');
+      }
+      render();
+    })();
+  </script>
+</body>
+</html>
