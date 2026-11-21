@@ -1,8 +1,12 @@
-# Pure Chess Clock — by Holocene Games
+# Chess Keeper
 
-A **zero-dependency, single-page HTML5 / CSS3 / vanilla JavaScript** chess clock with an integrated floating chessboard, algebraic notation scorecard, PGN game archive, and 2-device synchronization.
+## Game Tracker and Clock
 
-No Node.js, no `npm install`, no build step, and no external CDN assets required—open `index.html` in any modern browser and play.
+* **Time Every Move:** Run Bullet, Blitz, Classical, or multi-day matches in digital, hourglass, or analog view.
+* **Play Effortlessly:** Start, pause, and switch turns with the spacebar—or automatically on every board move.
+* **Sync Anywhere:** Share one screen, float over your desktop, or link two devices in real time without a server. 
+* **Track Automatically:** Play on a live, tear-away board that enforces legal moves and writes clean notation for you.
+* **Save & Share:** Keep player stats, export Chess.com-ready PGNs, and snap PNG board shots in one click.
 
 ## Features & Clock Styles
 
